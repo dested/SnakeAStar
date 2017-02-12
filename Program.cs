@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace ConsoleApplication2
 {
@@ -33,12 +34,12 @@ namespace ConsoleApplication2
                         break;
                     }
                     Draw(board);
-
+                    Thread.Sleep(20);
                     //                    Console.ReadLine();
                     ticks++;
                 }
-                if(board.Snake.Points.Count>200)
-                Console.ReadLine();
+                if (board.Snake.Points.Count > 200)
+                    Console.ReadLine();
             }
         }
 
@@ -49,7 +50,8 @@ namespace ConsoleApplication2
             var start = board.Snake.Head;
             var goal = board.Dot;
 
-            var startBoard = new Board(board);
+            var fakeBoard = new Board(board);
+            var startSnake = new Snake(board.Snake);
 
             HashSet<FacingPoint> closedSet = new HashSet<FacingPoint>();
             HashSet<FacingPoint> openSet = new HashSet<FacingPoint> { start };
@@ -58,8 +60,8 @@ namespace ConsoleApplication2
             var gScore = new Dictionary<FacingPoint, double>();
             gScore[start] = 0;
 
-            var fScore = new Dictionary<FacingPoint, Tuple<FacingPoint, Board, double>>();
-            fScore[start] = Tuple.Create(start, startBoard, distance(start, goal));
+            var fScore = new Dictionary<FacingPoint, Tuple<FacingPoint, Snake, double>>();
+            fScore[start] = Tuple.Create(start, startSnake, distance(start, goal));
 
 
             while (openSet.Count > 0)
@@ -67,7 +69,7 @@ namespace ConsoleApplication2
                 var keyValuePair = fScore.OrderBy(a => a.Value.Item3).First();
                 var currentItem = keyValuePair.Value;
                 var currentPoint = currentItem.Item1;
-                var currentBoard = currentItem.Item2;
+                var currentSnake = currentItem.Item2;
                 //                Console.WriteLine(currentPoint + " " + keyValuePair.Key);
                 //                Console.ReadLine();
 
@@ -80,9 +82,12 @@ namespace ConsoleApplication2
                 var newPoint = false;
                 foreach (var neighbor in neighbors(currentPoint))
                 {
-                    var newBoard = new Board(currentBoard);
-                    newBoard.Snake.SetFacing(neighbor.Facing);
-                    if (newBoard.Tick(false))
+                    var newSnake = new Snake(currentSnake);
+                    newSnake.SetFacing(neighbor.Facing);
+
+                    fakeBoard.Snake = newSnake;
+
+                    if (fakeBoard.Tick(false))
                     {
                         if (closedSet.Contains(neighbor))
                         {
@@ -102,7 +107,7 @@ namespace ConsoleApplication2
                         cameFrom[neighbor] = currentPoint;
                         gScore[neighbor] = tentative_gScore;
 
-                        fScore[neighbor] = Tuple.Create(neighbor, newBoard, distance(neighbor, goal));
+                        fScore[neighbor] = Tuple.Create(neighbor, newSnake, distance(neighbor, goal));
                         newPoint = true;
                     }
                 }
@@ -180,7 +185,7 @@ namespace ConsoleApplication2
             var y = Math.Min(y1 * y1, y2 * y2);
 
             var result = Math.Sqrt(x + y);
-            
+
 
             return result;
         }
@@ -267,9 +272,6 @@ namespace ConsoleApplication2
             Height = height;
         }
 
-        public Snake Snake { get; set; }
-        public Point Dot { get; set; }
-
         public Board(Board original)
         {
             Width = original.Width;
@@ -277,6 +279,8 @@ namespace ConsoleApplication2
             Dot = original.Dot;
             Snake = new Snake(original.Snake);
         }
+        public Snake Snake { get; set; }
+        public Point Dot { get; set; }
 
         public bool Tick(bool real = true)
         {
