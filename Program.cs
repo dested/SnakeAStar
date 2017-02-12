@@ -20,7 +20,6 @@ namespace SnakeAStar
             var canvas = (HTMLCanvasElement)Document.CreateElement("canvas");
             canvas.Width = Width * blockSize;
             canvas.Height = Height * blockSize;
-            canvas.Style.Border = $"solid {blockSize}px black";
             context = canvas.GetContext(CanvasTypes.CanvasContext2DType.CanvasRenderingContext2D);
 
             Document.Body.AppendChild(canvas);

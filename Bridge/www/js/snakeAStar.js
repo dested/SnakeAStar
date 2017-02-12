@@ -349,7 +349,6 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
             var canvas = Bridge.cast(document.createElement("canvas"), HTMLCanvasElement);
             canvas.width = 400;
             canvas.height = 400;
-            canvas.style.border = System.String.format("solid {0}px black", SnakeAStar.Program.blockSize);
             SnakeAStar.Program.context = canvas.getContext("2d");
 
             document.body.appendChild(canvas);
