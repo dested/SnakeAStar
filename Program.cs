@@ -343,14 +343,14 @@ namespace ConsoleApplication2
         {
             var facingPoint = new FacingPoint(x, y, facing);
             Points = new List<FacingPoint>(2) { facingPoint };
-            PointsHash = new List<int>(2) { facingPoint.GetHashCodeNoFacing() };
+            PointsHash = new List<int>(2) { facingPoint.hashCodeNoFacing };
         }
 
         public Snake(Snake original)
         {
             Points = new List<FacingPoint>(original.Points.Count + 1);
             Points.AddRange(original.Points);
-            PointsHash = new List<int>(original.PointsHash.Count);
+            PointsHash = new List<int>(original.PointsHash.Count + 1);
             PointsHash.AddRange(original.PointsHash);
         }
 
@@ -365,24 +365,38 @@ namespace ConsoleApplication2
 
         public bool ContainsPoint(Point point)
         {
-            return PointsHash.Contains(point.X * 1000 + point.Y);
+            var pointHashCodeNoFacing = point.hashCodeNoFacing;
+            var pointsHashCount = PointsHash.Count;
+            for (int i = 0; i < pointsHashCount; i++)
+            {
+                if (PointsHash[i] == pointHashCodeNoFacing)
+                    return true;
+            }
+            return false;
         }
 
         internal bool ContainsPoint(int x, int y)
         {
-            return PointsHash.Contains(x * 1000 + y);
+            var pointHashCodeNoFacing = x * 1000 + y;
+            var pointsHashCount = PointsHash.Count;
+            for (int i = 0; i < pointsHashCount; i++)
+            {
+                if (PointsHash[i] == pointHashCodeNoFacing)
+                    return true;
+            }
+            return false;
         }
         public void InsertPoint(FacingPoint movePoint)
         {
             Points.Insert(0, movePoint);
-            PointsHash.Add(movePoint.GetHashCodeNoFacing());
+            PointsHash.Insert(0, movePoint.hashCodeNoFacing);
         }
 
         public void RemoveLastPoint()
         {
-            var point = Points[Points.Count - 1];
-            Points.RemoveAt(Points.Count - 1);
-            PointsHash.Remove(point.GetHashCodeNoFacing());
+            var last = Points.Count - 1;
+            Points.RemoveAt(last);
+            PointsHash.RemoveAt(last);
 
         }
 
@@ -457,28 +471,29 @@ namespace ConsoleApplication2
 
     public class Point
     {
+        public int hashCodeNoFacing;
         public override string ToString()
         {
             return $"{nameof(X)}: {X}, {nameof(Y)}: {Y}";
         }
 
-        protected bool Equals(Point other) => other.X == X && other.Y == Y;
+        protected bool Equals(Point other) => other.hashCodeNoFacing == hashCodeNoFacing;
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(this, obj)) return true;
-            return Equals((Point)obj);
+            return hashCodeNoFacing == obj.GetHashCode();
         }
 
         public override int GetHashCode()
         {
-            return X * 1000 + Y;
+            return hashCodeNoFacing;
         }
 
         public Point(Point point)
         {
             X = point.X;
             Y = point.Y;
+            hashCodeNoFacing = X * 1000 + Y;
         }
         public Point(int x, int y)
         {
@@ -503,6 +518,7 @@ namespace ConsoleApplication2
 
             X = x;
             Y = y;
+            hashCodeNoFacing = X * 1000 + Y;
         }
 
         public int X { get; }
@@ -511,16 +527,17 @@ namespace ConsoleApplication2
 
     public class FacingPoint : Point
     {
+        private int hashCode;
+        private int hashCodeNoFacing;
+
         public override string ToString()
         {
             return $"{nameof(Facing)}: {Facing} {base.ToString()}";
         }
 
-        protected bool Equals(FacingPoint other) =>
-            other.X == X && other.Y == Y && other.Facing == Facing;
+        protected bool Equals(FacingPoint other) => other.hashCode == hashCode;
 
-        public bool EqualsNoFacing(Point other) =>
-                   other.X == X && other.Y == Y;
+        public bool EqualsNoFacing(Point other) => other.hashCodeNoFacing == hashCodeNoFacing;
 
         public override bool Equals(object obj)
         {
@@ -530,20 +547,23 @@ namespace ConsoleApplication2
 
         public override int GetHashCode()
         {
-            return X * 1000 + Y * 50 + (int)Facing;
-        }
-        public int GetHashCodeNoFacing()
-        {
-            return X * 1000 + Y;
-        }
-
+            return hashCode;
+        } 
         public FacingPoint(FacingPoint point) : base(point)
         {
             Facing = point.Facing;
+            generateHashCodes();
         }
         public FacingPoint(int x, int y, Facing facing) : base(x, y)
         {
             Facing = facing;
+            generateHashCodes();
+        }
+
+        private void generateHashCodes()
+        {
+            hashCode = X * 1000 + Y * 50 + (int)Facing;
+            hashCodeNoFacing = X * 1000 + Y;
         }
 
         public Facing Facing { get; }
