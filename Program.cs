@@ -210,7 +210,6 @@ namespace ConsoleApplication2
 
         private static void Draw(Board board)
         {
-            Console.Clear();
             for (int y = 0; y < board.Height; y++)
             {
                 for (int x = 0; x < board.Width; x++)
@@ -218,28 +217,54 @@ namespace ConsoleApplication2
 
                     if (board.Dot.X == x && board.Dot.Y == y)
                     {
-                        Console.Write("X");
+                        ConsoleManager.SetPosition(x, y, 'X');
                     }
                     else if (board.Snake.Points.Any(a => a.X == x && a.Y == y))
                     {
                         if (board.Snake.Head.X == x && board.Snake.Head.Y == y)
                         {
-                            Console.Write("Z");
+                            ConsoleManager.SetPosition(x, y, 'Z');
                         }
                         else
                         {
-                            Console.Write("Y");
+                            ConsoleManager.SetPosition(x, y, 'Y');
                         }
                     }
                     else
                     {
-                        Console.Write(" ");
+                        ConsoleManager.SetPosition(x, y, ' ');
                     }
 
                 }
-                Console.WriteLine();
             }
         }
+    }
+
+    public class ConsoleManager
+    {
+        private static char[,] console = new char[100, 100];
+
+        static ConsoleManager()
+        {
+            for (int x = 0; x < 100; x++)
+            {
+                for (int y = 0; y < 100; y++)
+                {
+                    console[x, y] = ' ';
+                }
+            }
+        }
+
+        public static void SetPosition(int x, int y, char c)
+        {
+            if (console[x, y] != c)
+            {
+                console[x, y] = c;
+                Console.SetCursorPosition(x, y);
+                Console.Write(c);
+            }
+        }
+
     }
 
     public class Board
