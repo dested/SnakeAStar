@@ -15,8 +15,47 @@ namespace ConsoleApplication2
             Draw(board);
             while (true)
             {
+                GetInput(board);
                 board.Tick();
                 Draw(board);
+            }
+        }
+
+        private static void GetInput(Board board)
+        {
+            if (board.Dot.X < board.Snake.Head.X)
+            {
+                if (board.Snake.Facing != Facing.Left)
+                {
+                    board.Snake.SetFacing(Facing.Left);
+                    return;
+                }
+            }
+            else if (board.Dot.X > board.Snake.Head.X)
+            {
+                if (board.Snake.Facing != Facing.Right)
+                {
+                    board.Snake.SetFacing(Facing.Right);
+                    return;
+                }
+            }
+
+
+            if (board.Dot.Y < board.Snake.Head.Y)
+            {
+                if (board.Snake.Facing != Facing.Up)
+                {
+                    board.Snake.SetFacing(Facing.Up);
+                    return;
+                }
+            }
+            else if (board.Dot.Y > board.Snake.Head.Y)
+            {
+                if (board.Snake.Facing != Facing.Down)
+                {
+                    board.Snake.SetFacing(Facing.Right);
+                    return;
+                }
             }
         }
 
@@ -25,9 +64,9 @@ namespace ConsoleApplication2
             Console.Clear();
             for (int y = 0; y < board.Height; y++)
             {
-
                 for (int x = 0; x < board.Width; x++)
                 {
+
                     if (board.Dot.X == x && board.Dot.Y == y)
                     {
                         Console.Write("X");
@@ -45,8 +84,9 @@ namespace ConsoleApplication2
                     }
                     else
                     {
-                        Console.Write("X");
+                        Console.Write(" ");
                     }
+
                 }
                 Console.WriteLine();
             }
@@ -169,6 +209,73 @@ namespace ConsoleApplication2
         public Point Head => Points[0];
         public List<Point> Points { get; set; }
         public Facing Facing { get; set; }
+
+        public void SetFacing(Facing facing)
+        {
+            switch (Facing)
+            {
+                case Facing.Up:
+
+                    switch (facing)
+                    {
+                        case Facing.Up:
+                        case Facing.Left:
+                        case Facing.Right:
+                            this.Facing = facing;
+                            break;
+                        case Facing.Down:
+                            throw new Exception("Cannot set this facing");
+                        default:
+                            throw new ArgumentOutOfRangeException(nameof(facing), facing, null);
+                    }
+
+                    break;
+                case Facing.Down:
+                    switch (facing)
+                    {
+                        case Facing.Down:
+                        case Facing.Left:
+                        case Facing.Right:
+                            this.Facing = facing;
+                            break;
+                        case Facing.Up:
+                            throw new Exception("Cannot set this facing");
+                        default:
+                            throw new ArgumentOutOfRangeException(nameof(facing), facing, null);
+                    }
+                    break;
+                case Facing.Left:
+                    switch (facing)
+                    {
+                        case Facing.Up:
+                        case Facing.Left:
+                        case Facing.Down:
+                            this.Facing = facing;
+                            break;
+                        case Facing.Right:
+                            throw new Exception("Cannot set this facing");
+                        default:
+                            throw new ArgumentOutOfRangeException(nameof(facing), facing, null);
+                    }
+                    break;
+                case Facing.Right:
+                    switch (facing)
+                    {
+                        case Facing.Up:
+                        case Facing.Right:
+                        case Facing.Down:
+                            this.Facing = facing;
+                            break;
+                        case Facing.Left:
+                            throw new Exception("Cannot set this facing");
+                        default:
+                            throw new ArgumentOutOfRangeException(nameof(facing), facing, null);
+                    }
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
     }
 
     public class Point
