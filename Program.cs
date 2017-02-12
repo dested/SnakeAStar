@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -11,62 +12,154 @@ namespace ConsoleApplication2
     {
         static void Main(string[] args)
         {
-            var board = Board.Start(10, 10, 3, 3, Facing.Up);
-            Draw(board);
             while (true)
             {
-                GetInput(board);
-                if (!board.Tick())
-                {
-                    Console.WriteLine($"Dead! {board.Snake.Points.Count} Length");
-
-                    Console.ReadLine();
-                    break;
-                }
+                int ticks = 0;
+                var board = Board.Start(10, 10, 3, 3, Facing.Up);
                 Draw(board);
+                while (true)
+                {
+                    board.Snake.SetFacing(GetInput(board));
+                    if (!board.Tick())
+                    {
+                        Draw(board);
+                        Console.WriteLine($"Dead! {board.Snake.Points.Count} Length in {ticks} ticks.");
+                        Console.ReadLine();
+                        break;
+                    }
+                    Draw(board);
+                    Console.ReadLine();
+                    ticks++;
+                }
             }
         }
 
-        private static void GetInput(Board board)
+
+
+        private static Facing GetInput(Board board)
         {
+            var start = board.Snake.Head;
+            var goal = board.Dot;
+
+            HashSet<FacingPoint> closedSet = new HashSet<FacingPoint>();
+            HashSet<FacingPoint> openSet = new HashSet<FacingPoint>() { start };
+            Dictionary<FacingPoint, FacingPoint> cameFrom = new Dictionary<FacingPoint, FacingPoint>();
+
+            var gScore = new Dictionary<FacingPoint, double>();
+            gScore[start] = 0;
+
+            var fScore = new Dictionary<FacingPoint, double>();
+            fScore[start] = distance(start, goal);
+    
+
+            while (openSet.Count > 0)
+            {
+                var current = fScore.OrderBy(a => a.Value).First().Key;
+                if (current.EqualsNoFacing(goal))
+                {
+                    return cameFrom.First().Key.Facing;
+                }
+                openSet.Remove(current);
+                closedSet.Add(current);
+
+                foreach (var neighbor in neighbors(current))
+                {
+                    if (closedSet.Contains(neighbor))
+                    {
+                        continue;
+                    }
+                    var tentative_gScore = gScore[current] + distance(current, neighbor);
+
+                    if (!openSet.Contains(neighbor))
+                    {
+                        openSet.Add(neighbor);
+                    }
+                    else if (tentative_gScore >= gScore[neighbor])
+                    {
+                        continue;
+                    }
+                    cameFrom[neighbor] = current;
+                    gScore[neighbor] = tentative_gScore;
+                    fScore[neighbor] = gScore[neighbor] + distance(neighbor, goal);
+                }
+                fScore.Remove(current);
+
+            }
+            
+
+
+            return Facing.Down;
+
+
             if (board.Dot.X < board.Snake.Head.X)
             {
-                if (board.Snake.Facing != Facing.Left && board.Snake.Facing != Facing.Right)
+                if (board.Snake.Head.Facing != Facing.Right)
                 {
-                    board.Snake.SetFacing(Facing.Left);
-                    return;
+
+                    return Facing.Left;
                 }
             }
             else if (board.Dot.X > board.Snake.Head.X)
             {
-                if (board.Snake.Facing != Facing.Right && board.Snake.Facing != Facing.Left)
+                if (board.Snake.Head.Facing != Facing.Left)
                 {
-                    board.Snake.SetFacing(Facing.Right);
-                    return;
+                    return Facing.Right;
                 }
             }
 
 
             if (board.Dot.Y < board.Snake.Head.Y)
             {
-                if (board.Snake.Facing != Facing.Up && board.Snake.Facing != Facing.Down)
+                if (board.Snake.Head.Facing != Facing.Down)
                 {
-                    board.Snake.SetFacing(Facing.Up);
-                    return;
+                    return Facing.Up;
                 }
             }
             else if (board.Dot.Y > board.Snake.Head.Y)
             {
-                if (board.Snake.Facing != Facing.Down && board.Snake.Facing != Facing.Up)
+                if (board.Snake.Head.Facing != Facing.Up)
                 {
-                    board.Snake.SetFacing(Facing.Down);
-                    return;
+                    return Facing.Down;
                 }
             }
+            return Facing.Down;
+        }
 
+        private static IEnumerable<FacingPoint> neighbors(FacingPoint current)
+        {
+            switch (current.Facing)
+            {
+                case Facing.Up:
+                    yield return new FacingPoint(current.X, current.Y - 1, Facing.Up);
+                    yield return new FacingPoint(current.X - 1, current.Y, Facing.Left);
+                    yield return new FacingPoint(current.X + 1, current.Y, Facing.Right);
+                    break;
+                case Facing.Down:
+                    yield return new FacingPoint(current.X, current.Y + 1, Facing.Down);
+                    yield return new FacingPoint(current.X - 1, current.Y, Facing.Left);
+                    yield return new FacingPoint(current.X + 1, current.Y, Facing.Right);
+                    break;
+                case Facing.Left:
+                    yield return new FacingPoint(current.X - 1, current.Y, Facing.Left);
+                    yield return new FacingPoint(current.X, current.Y - 1, Facing.Up);
+                    yield return new FacingPoint(current.X, current.Y + 1, Facing.Down);
+                    break;
+                case Facing.Right:
+                    yield return new FacingPoint(current.X + 1, current.Y, Facing.Right);
+                    yield return new FacingPoint(current.X, current.Y - 1, Facing.Up);
+                    yield return new FacingPoint(current.X, current.Y + 1, Facing.Down);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
 
+        }
 
-
+        private static double distance(FacingPoint start, Point goal)
+        {
+            var x = (goal.X - start.X);
+            var y = (goal.Y - start.Y);
+            return Math.Sqrt(x * x + y * y);
         }
 
         private static void Draw(Board board)
@@ -135,20 +228,20 @@ namespace ConsoleApplication2
 
         public bool Tick()
         {
-            Point movePoint;
-            switch (Snake.Facing)
+            FacingPoint movePoint;
+            switch (Snake.Head.Facing)
             {
                 case Facing.Up:
-                    movePoint = new Point(Snake.Head.X, Snake.Head.Y - 1);
+                    movePoint = new FacingPoint(Snake.Head.X, Snake.Head.Y - 1, Snake.Head.Facing);
                     break;
                 case Facing.Down:
-                    movePoint = new Point(Snake.Head.X, Snake.Head.Y + 1);
+                    movePoint = new FacingPoint(Snake.Head.X, Snake.Head.Y + 1, Snake.Head.Facing);
                     break;
                 case Facing.Left:
-                    movePoint = new Point(Snake.Head.X - 1, Snake.Head.Y);
+                    movePoint = new FacingPoint(Snake.Head.X - 1, Snake.Head.Y, Snake.Head.Facing);
                     break;
                 case Facing.Right:
-                    movePoint = new Point(Snake.Head.X + 1, Snake.Head.Y);
+                    movePoint = new FacingPoint(Snake.Head.X + 1, Snake.Head.Y, Snake.Head.Facing);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -160,14 +253,14 @@ namespace ConsoleApplication2
             }
             foreach (var snakePoint in Snake.Points)
             {
-                if (snakePoint.Equals(movePoint))
+                if (snakePoint.EqualsNoFacing(movePoint))
                 {
                     return false;
                 }
             }
             Snake.Points.Insert(0, movePoint);
 
-            if (movePoint.Equals(Dot))
+            if (movePoint.EqualsNoFacing(Dot))
             {
                 this.newDot();
             }
@@ -207,23 +300,20 @@ namespace ConsoleApplication2
     {
         public Snake(int x, int y, Facing facing)
         {
-            Points = new List<Point>() { new Point(x, y), };
-            Facing = facing;
+            Points = new List<FacingPoint>() { new FacingPoint(x, y, facing), };
         }
 
         public Snake(Snake original)
         {
-            this.Points = original.Points.Select(a => new Point(a)).ToList();
-            this.Facing = original.Facing;
+            this.Points = original.Points.Select(a => new FacingPoint(a)).ToList();
         }
 
-        public Point Head => Points[0];
-        public List<Point> Points { get; set; }
-        public Facing Facing { get; set; }
+        public FacingPoint Head => Points[0];
+        public List<FacingPoint> Points { get; set; }
 
         public void SetFacing(Facing facing)
         {
-            switch (Facing)
+            switch (Head.Facing)
             {
                 case Facing.Up:
 
@@ -232,7 +322,7 @@ namespace ConsoleApplication2
                         case Facing.Up:
                         case Facing.Left:
                         case Facing.Right:
-                            this.Facing = facing;
+                            Head.Facing = facing;
                             break;
                         case Facing.Down:
                             throw new Exception("Cannot set this facing");
@@ -247,7 +337,7 @@ namespace ConsoleApplication2
                         case Facing.Down:
                         case Facing.Left:
                         case Facing.Right:
-                            this.Facing = facing;
+                            Head.Facing = facing;
                             break;
                         case Facing.Up:
                             throw new Exception("Cannot set this facing");
@@ -261,7 +351,7 @@ namespace ConsoleApplication2
                         case Facing.Up:
                         case Facing.Left:
                         case Facing.Down:
-                            this.Facing = facing;
+                            Head.Facing = facing;
                             break;
                         case Facing.Right:
                             throw new Exception("Cannot set this facing");
@@ -275,7 +365,7 @@ namespace ConsoleApplication2
                         case Facing.Up:
                         case Facing.Right:
                         case Facing.Down:
-                            this.Facing = facing;
+                            Head.Facing = facing;
                             break;
                         case Facing.Left:
                             throw new Exception("Cannot set this facing");
@@ -320,8 +410,41 @@ namespace ConsoleApplication2
         public int X { get; set; }
         public int Y { get; set; }
     }
+
+    public class FacingPoint : Point
+    {
+        protected bool Equals(FacingPoint other) =>
+            other.X == X && other.Y == Y && other.Facing == Facing;
+
+        public bool EqualsNoFacing(Point other) =>
+                   other.X == X && other.Y == Y;
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((Point)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return this.X * 1000 + this.Y * 50 + (int)Facing;
+        }
+
+        public FacingPoint(FacingPoint point) : base(point)
+        {
+            this.Facing = point.Facing;
+        }
+        public FacingPoint(int x, int y, Facing facing) : base(x, y)
+        {
+            Facing = facing;
+        }
+
+        public Facing Facing { get; set; }
+    }
     public enum Facing
     {
-        Up, Down, Left, Right
+        Up = 1, Down = 2, Left = 3, Right = 4
     }
 }
