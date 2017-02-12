@@ -15,7 +15,7 @@ namespace ConsoleApplication2
             while (true)
             {
                 int ticks = 0;
-                var board = Board.Start(10, 10, 3, 3, Facing.Up);
+                var board = Board.Start(30, 30, 3, 3, Facing.Up);
                 Draw(board);
                 while (true)
                 {
@@ -27,7 +27,7 @@ namespace ConsoleApplication2
                         break;
                     }
                     Draw(board);
-                                        Console.ReadLine();
+                    Console.ReadLine();
                     ticks++;
                 }
             }
@@ -53,45 +53,43 @@ namespace ConsoleApplication2
             fScore[distance(start, goal)] = new Tuple<FacingPoint, Board>(start, startBoard);
 
 
-            while (openSet.Count > 0 && fScore.Count>0)
+            while (openSet.Count > 0)
             {
-                var currentItem = fScore.First().Value;
+                var keyValuePair = fScore.First();
+                var currentItem = keyValuePair.Value;
                 var currentPoint = currentItem.Item1;
                 var currentBoard = currentItem.Item2;
-
                 if (currentPoint.EqualsNoFacing(goal))
                 {
-                    return reconstruct(cameFrom, currentPoint);
+                    return reconstruct(cameFrom, currentPoint)[0].Facing;
                 }
                 openSet.Remove(currentPoint);
                 closedSet.Add(currentPoint);
-                fScore.RemoveAt(0);
-
                 foreach (var neighbor in neighbors(currentPoint))
                 {
-                    if (closedSet.Contains(neighbor))
-                    {
-                        continue;
-                    }
-                    var tentative_gScore = gScore[currentPoint] + distance(currentPoint, neighbor);
-
-                    if (!openSet.Contains(neighbor))
-                    {
-                        openSet.Add(neighbor);
-                    }
-                    else if (tentative_gScore >= gScore[neighbor])
-                    {
-                        continue;
-                    }
-                     
-                    cameFrom[neighbor] = currentPoint;
-                    gScore[neighbor] = tentative_gScore;
-
                     var newBoard = new Board(currentBoard);
                     newBoard.Snake.SetFacing(neighbor.Facing);
-                    if ( newBoard.Tick())
+                    if (newBoard.Tick(false))
                     {
-                        fScore[gScore[neighbor] + distance(neighbor, goal)] = Tuple.Create(neighbor, newBoard);
+                        if (closedSet.Contains(neighbor))
+                        {
+                            continue;
+                        }
+                        var tentative_gScore = gScore[currentPoint] + distance(currentPoint, neighbor);
+
+                        if (!openSet.Contains(neighbor))
+                        {
+                            openSet.Add(neighbor);
+                        }
+                        else if (tentative_gScore >= gScore[neighbor])
+                        {
+                            continue;
+                        }
+
+                        cameFrom[neighbor] = currentPoint;
+                        gScore[neighbor] = tentative_gScore;
+
+                        fScore[distance(neighbor, goal)] = Tuple.Create(neighbor, newBoard);
                     }
                 }
 
@@ -136,7 +134,7 @@ namespace ConsoleApplication2
             return Facing.Down;
         }
 
-        private static Facing reconstruct(Dictionary<FacingPoint, FacingPoint> cameFrom, FacingPoint current)
+        private static List<FacingPoint> reconstruct(Dictionary<FacingPoint, FacingPoint> cameFrom, FacingPoint current)
         {
             List<FacingPoint> points = new List<FacingPoint>();
             FacingPoint now;
@@ -148,10 +146,8 @@ namespace ConsoleApplication2
                 points.Add(now);
                 now = cameFrom[now];
             }
-            points.Add(now);
-
             points.Reverse();
-            return points[1].Facing;
+            return points;
 
             /*       total_path := [current]
        while current in cameFrom.Keys:
@@ -276,7 +272,7 @@ namespace ConsoleApplication2
             Snake = new Snake(original.Snake);
         }
 
-        public bool Tick()
+        public bool Tick(bool real = true)
         {
             FacingPoint movePoint;
             switch (Snake.Head.Facing)
@@ -312,7 +308,10 @@ namespace ConsoleApplication2
 
             if (movePoint.EqualsNoFacing(Dot))
             {
-                this.newDot();
+                if (real)
+                {
+                    this.newDot();
+                }
             }
             else
             {
@@ -331,7 +330,7 @@ namespace ConsoleApplication2
                 this.Dot = new Point(r.Next(0, Width), r.Next(0, Height));
                 foreach (var snakePoint in Snake.Points)
                 {
-                    if (snakePoint.Equals(this.Dot))
+                    if (snakePoint.EqualsNoFacing(this.Dot))
                     {
                         good = false;
                         break;
