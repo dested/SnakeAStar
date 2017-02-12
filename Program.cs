@@ -3,44 +3,56 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Bridge.Html5;
 
 namespace SnakeAStar
 {
     class Program
     {
-        public const int Width = 30;
-        public const int Height = 30;
+        public const int Width = 80;
+        public const int Height = 80;
+        private static CanvasRenderingContext2D context;
         static void Main(string[] args)
         {
-            while (true)
-            {
-//                Console.Clear();
+            //                Console.Clear();
 
-                int ticks = 0;
-                var board = Board.Start(Width, Height, 3, 3, Facing.Up);
-                Draw(board);
-                while (true)
+
+            var canvas = (HTMLCanvasElement)Document.CreateElement("canvas");
+            canvas.Width = Width * blockSize;
+            canvas.Height = Height * blockSize;
+            canvas.Style.Border = $"solid {blockSize}px black";
+            context = canvas.GetContext(CanvasTypes.CanvasContext2DType.CanvasRenderingContext2D);
+
+            Document.Body.AppendChild(canvas);
+
+            int ticks = 0;
+            var board = Board.Start(Width, Height, 3, 3, Facing.Up);
+            Draw(board);
+
+            int interval = 0;
+            interval = Window.SetInterval(() =>
+            {
+                var facing = GetInput(board);
+                if (facing == Facing.None)
                 {
-                    var facing = GetInput(board);
-                    if (facing == Facing.None)
-                    {
-//                        Console.SetCursorPosition(0, board.Height + 2);
-                        Console.WriteLine($"Dead! {board.Snake.Points.Count} Length in {ticks} ticks.");
-                        break;
-                    }
-                    board.Snake.SetFacing(facing);
-                    if (!board.Tick())
-                    {
-//                        Console.SetCursorPosition(0, board.Height + 2);
-                        Console.WriteLine($"Dead! {board.Snake.Points.Count} Length in {ticks} ticks.");
-                        break;
-                    }
-                    Draw(board);
-//                                                            Thread.Sleep(20);
-                    ticks++;
+                    //                        Console.SetCursorPosition(0, board.Height + 2);
+                    Console.WriteLine($"Dead! {board.Snake.Points.Count} Length in {ticks} ticks.");
+                    Window.ClearInterval(interval);
+                    return;
                 }
-            
-            }
+                board.Snake.SetFacing(facing);
+                if (!board.Tick())
+                {
+                    //                        Console.SetCursorPosition(0, board.Height + 2);
+                    Console.WriteLine($"Dead! {board.Snake.Points.Count} Length in {ticks} ticks.");
+                    Window.ClearInterval(interval);
+                    return;
+                }
+                Draw(board);
+                //                                                            Thread.Sleep(20);
+                ticks++;
+
+            }, 0);
         }
 
 
@@ -62,8 +74,8 @@ namespace SnakeAStar
             var fakeBoard = new Board(board);
             var startSnake = new Snake(board.Snake);
 
-            HashSet<int> closedSet = new HashSet<int>();
-            HashSet<int> openSet = new HashSet<int> { start.hashCode };
+            List<int> closedSet = new List<int>();
+            List<int> openSet = new List<int> { start.hashCode };
             Dictionary<int, Point> cameFrom = new Dictionary<int, Point>();
 
             var gScore = new Dictionary<int, double>();
@@ -216,9 +228,11 @@ namespace SnakeAStar
             return result;
         }
 
+        private const int blockSize = 5;
         private static void Draw(Board board)
         {
-            return;
+            context.ClearRect(0, 0, blockSize * Width, blockSize * Height);
+
             var snakeHead = board.Snake.Head;
             for (int y = 0; y < board.Height; y++)
             {
@@ -226,22 +240,25 @@ namespace SnakeAStar
                 {
                     if (board.Dot.X == x && board.Dot.Y == y)
                     {
-                        ConsoleManager.SetPosition(x, y, 'X');
+                        context.FillStyle = "red";
+                        context.FillRect(x * blockSize, y * blockSize, blockSize, blockSize);
                     }
                     else if (board.Snake.ContainsPoint(x, y))
                     {
                         if (snakeHead.X == x && snakeHead.Y == y)
                         {
-                            ConsoleManager.SetPosition(x, y, 'Z');
+                            context.FillStyle = "light blue";
+                            context.FillRect(x * blockSize, y * blockSize, blockSize, blockSize);
                         }
                         else
                         {
-                            ConsoleManager.SetPosition(x, y, 'Y');
+                            context.FillStyle = "blue";
+                            context.FillRect(x * blockSize, y * blockSize, blockSize, blockSize);
                         }
                     }
                     else
                     {
-                        ConsoleManager.SetPosition(x, y, ' ');
+                        //                        ConsoleManager.SetPosition(x, y, ' ');
                     }
 
                 }
@@ -249,32 +266,6 @@ namespace SnakeAStar
         }
     }
 
-    public class ConsoleManager
-    {
-        private static char[,] console = new char[100, 100];
-
-        static ConsoleManager()
-        {
-            for (int x = 0; x < 100; x++)
-            {
-                for (int y = 0; y < 100; y++)
-                {
-                    console[x, y] = ' ';
-                }
-            }
-        }
-
-        public static void SetPosition(int x, int y, char c)
-        {
-            if (console[x, y] != c)
-            {
-                console[x, y] = c;
-                Console.SetCursorPosition(x, y);
-                Console.Write(c);
-            }
-        }
-
-    }
 
     public class Board
     {
@@ -349,7 +340,7 @@ namespace SnakeAStar
             return true;
         }
 
-        static Random r = new Random(15655);
+        static Random r = new Random(15659);
 
         private void newDot()
         {
