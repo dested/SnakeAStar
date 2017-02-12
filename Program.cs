@@ -14,7 +14,7 @@ namespace SnakeAStar
         {
             while (true)
             {
-                Console.Clear();
+//                Console.Clear();
 
                 int ticks = 0;
                 var board = Board.Start(Width, Height, 3, 3, Facing.Up);
@@ -24,31 +24,38 @@ namespace SnakeAStar
                     var facing = GetInput(board);
                     if (facing == Facing.None)
                     {
-                        Console.SetCursorPosition(0, board.Height + 2);
+//                        Console.SetCursorPosition(0, board.Height + 2);
                         Console.WriteLine($"Dead! {board.Snake.Points.Count} Length in {ticks} ticks.");
                         break;
                     }
                     board.Snake.SetFacing(facing);
                     if (!board.Tick())
                     {
-                        Console.SetCursorPosition(0, board.Height + 2);
+//                        Console.SetCursorPosition(0, board.Height + 2);
                         Console.WriteLine($"Dead! {board.Snake.Points.Count} Length in {ticks} ticks.");
                         break;
                     }
                     Draw(board);
-                    //                                        Thread.Sleep(20);
-                    //                    Console.ReadLine();
+//                                                            Thread.Sleep(20);
                     ticks++;
                 }
-                if (board.Snake.Points.Count > 200)
-                    Console.ReadLine();
+            
             }
         }
 
 
+        static List<Facing> cachedPoints = new List<Facing>();
 
         private static Facing GetInput(Board board)
         {
+
+            if (cachedPoints.Count > 0)
+            {
+                var point = cachedPoints[0];
+                cachedPoints.RemoveAt(0);
+                return point;
+            }
+
             var start = board.Snake.Head;
             var goal = board.Dot;
 
@@ -90,10 +97,13 @@ namespace SnakeAStar
 
                 if (currentPoint.hashCodeNoFacing == goal.hashCodeNoFacing)
                 {
-                    return reconstruct(cameFrom, currentPoint)[0].Facing;
+                    cachedPoints = reconstruct(cameFrom, currentPoint);
+                    return GetInput(board);
                 }
-                openSet.Remove(currentPoint.hashCode);
-                closedSet.Add(currentPoint.hashCode);
+                var currentPointHashCode = currentPoint.hashCode;
+
+                openSet.Remove(currentPointHashCode);
+                closedSet.Add(currentPointHashCode);
                 var newPoint = false;
                 foreach (var neighbor in neighbors(currentPoint))
                 {
@@ -104,23 +114,24 @@ namespace SnakeAStar
 
                     if (fakeBoard.Tick(false))
                     {
-                        if (closedSet.Contains(neighbor.hashCode))
+                        var neighborHashCode = neighbor.hashCode;
+                        if (closedSet.Contains(neighborHashCode))
                         {
                             continue;
                         }
-                        var tentative_gScore = gScore[currentPoint.hashCode] + distance(currentPoint, neighbor);
+                        var tentative_gScore = gScore[currentPointHashCode] + distance(currentPoint, neighbor);
 
-                        if (!openSet.Contains(neighbor.hashCode))
+                        if (!openSet.Contains(neighborHashCode))
                         {
-                            openSet.Add(neighbor.hashCode);
+                            openSet.Add(neighborHashCode);
                         }
-                        else if (tentative_gScore >= gScore[neighbor.hashCode])
+                        else if (tentative_gScore >= gScore[neighborHashCode])
                         {
                             continue;
                         }
 
-                        cameFrom[neighbor.hashCode] = currentPoint;
-                        gScore[neighbor.hashCode] = tentative_gScore;
+                        cameFrom[neighborHashCode] = currentPoint;
+                        gScore[neighborHashCode] = tentative_gScore;
 
                         fScore.Add(Tuple.Create(neighbor, newSnake, distance(neighbor, goal)));
                         newPoint = true;
@@ -136,16 +147,16 @@ namespace SnakeAStar
             return Facing.None;
         }
 
-        private static List<Point> reconstruct(Dictionary<int, Point> cameFrom, Point current)
+        private static List<Facing> reconstruct(Dictionary<int, Point> cameFrom, Point current)
         {
-            List<Point> points = new List<Point>();
+            List<Facing> points = new List<Facing>();
             Point now;
-            points.Add(current);
+            points.Add(current.Facing);
             now = cameFrom[current.hashCode];
 
             while (cameFrom.ContainsKey(now.hashCode))
             {
-                points.Add(now);
+                points.Add(now.Facing);
                 now = cameFrom[now.hashCode];
             }
             points.Reverse();
@@ -207,6 +218,8 @@ namespace SnakeAStar
 
         private static void Draw(Board board)
         {
+            return;
+            var snakeHead = board.Snake.Head;
             for (int y = 0; y < board.Height; y++)
             {
                 for (int x = 0; x < board.Width; x++)
@@ -217,7 +230,7 @@ namespace SnakeAStar
                     }
                     else if (board.Snake.ContainsPoint(x, y))
                     {
-                        if (board.Snake.Head.X == x && board.Snake.Head.Y == y)
+                        if (snakeHead.X == x && snakeHead.Y == y)
                         {
                             ConsoleManager.SetPosition(x, y, 'Z');
                         }
@@ -296,25 +309,27 @@ namespace SnakeAStar
         public bool Tick(bool real = true)
         {
             Point movePoint;
-            switch (Snake.Head.Facing)
+            var snakeHead = Snake.Head;
+
+            switch (snakeHead.Facing)
             {
                 case Facing.Up:
-                    movePoint = Point.GetPoint(Snake.Head.X, Snake.Head.Y - 1, Snake.Head.Facing);
+                    movePoint = Point.GetPoint(snakeHead.X, snakeHead.Y - 1, snakeHead.Facing);
                     break;
                 case Facing.Down:
-                    movePoint = Point.GetPoint(Snake.Head.X, Snake.Head.Y + 1, Snake.Head.Facing);
+                    movePoint = Point.GetPoint(snakeHead.X, snakeHead.Y + 1, snakeHead.Facing);
                     break;
                 case Facing.Left:
-                    movePoint = Point.GetPoint(Snake.Head.X - 1, Snake.Head.Y, Snake.Head.Facing);
+                    movePoint = Point.GetPoint(snakeHead.X - 1, snakeHead.Y, snakeHead.Facing);
                     break;
                 case Facing.Right:
-                    movePoint = Point.GetPoint(Snake.Head.X + 1, Snake.Head.Y, Snake.Head.Facing);
+                    movePoint = Point.GetPoint(snakeHead.X + 1, snakeHead.Y, snakeHead.Facing);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
 
-            if (Snake.ContainsPoint(movePoint))
+            if (Snake.ContainsPoint(movePoint.hashCodeNoFacing))
             {
                 return false;
             }
@@ -334,14 +349,14 @@ namespace SnakeAStar
             return true;
         }
 
-        static Random r = new Random(15695);
+        static Random r = new Random(15655);
 
         private void newDot()
         {
             while (true)
             {
                 Dot = Point.GetPoint(r.Next(0, Width), r.Next(0, Height), Facing.None);
-                if (!Snake.ContainsPoint(Dot))
+                if (!Snake.ContainsPoint(Dot.hashCodeNoFacing))
                 {
                     break;
                 }
@@ -370,11 +385,6 @@ namespace SnakeAStar
         }
 
         public List<Point> Points;
-
-        public bool ContainsPoint(Point point)
-        {
-            return ContainsPoint(point.hashCodeNoFacing);
-        }
 
         internal bool ContainsPoint(int x, int y)
         {
@@ -488,11 +498,11 @@ namespace SnakeAStar
             {
                 for (int y = 0; y < Program.Height; y++)
                 {
-                    facingPoints.Add(x * 100000 + y * 50 + 1, new Point(x, y, Facing.Up));
-                    facingPoints.Add(x * 100000 + y * 50 + 2, new Point(x, y, Facing.Down));
-                    facingPoints.Add(x * 100000 + y * 50 + 3, new Point(x, y, Facing.Left));
-                    facingPoints.Add(x * 100000 + y * 50 + 4, new Point(x, y, Facing.Right));
-                    facingPoints.Add(x * 100000 + y * 50 + 5, new Point(x, y, Facing.None));
+                    facingPoints.Add(x * 100000 + y * 10 + 1, new Point(x, y, Facing.Up));
+                    facingPoints.Add(x * 100000 + y * 10 + 2, new Point(x, y, Facing.Down));
+                    facingPoints.Add(x * 100000 + y * 10 + 3, new Point(x, y, Facing.Left));
+                    facingPoints.Add(x * 100000 + y * 10 + 4, new Point(x, y, Facing.Right));
+                    facingPoints.Add(x * 100000 + y * 10 + 5, new Point(x, y, Facing.None));
                 }
             }
         }
@@ -517,7 +527,7 @@ namespace SnakeAStar
                 y -= Program.Height;
             }
 
-            return facingPoints[x * 100000 + y * 50 + (int)facing];
+            return facingPoints[x * 100000 + y * 10 + (int)facing];
         }
 
 
@@ -540,7 +550,7 @@ namespace SnakeAStar
 
         private void generateHashCodes()
         {
-            hashCode = X * 100000 + Y * 50 + (int)Facing;
+            hashCode = X * 100000 + Y * 10 + (int)Facing;
             hashCodeNoFacing = X * 100000 + Y;
         }
 
