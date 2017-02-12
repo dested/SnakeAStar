@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
-namespace ConsoleApplication2
+namespace SnakeAStar
 {
     class Program
     {
@@ -11,7 +11,6 @@ namespace ConsoleApplication2
         {
             while (true)
             {
-
                 Console.Clear();
 
                 int ticks = 0;
@@ -34,7 +33,7 @@ namespace ConsoleApplication2
                         break;
                     }
                     Draw(board);
-                    //                    Thread.Sleep(20);
+//                                        Thread.Sleep(20);
                     //                    Console.ReadLine();
                     ticks++;
                 }
@@ -358,15 +357,12 @@ namespace ConsoleApplication2
         {
             var facingPoint = new FacingPoint(x, y, facing);
             Points = new List<FacingPoint>(2) { facingPoint };
-            PointsHash = new List<int>(2) { facingPoint.hashCodeNoFacing };
         }
 
         public Snake(Snake original)
         {
             Points = new List<FacingPoint>(original.Points.Count + 1);
             Points.AddRange(original.Points);
-            PointsHash = new List<int>(original.PointsHash.Count + 1);
-            PointsHash.AddRange(original.PointsHash);
         }
 
         public FacingPoint Head
@@ -376,43 +372,37 @@ namespace ConsoleApplication2
         }
 
         public List<FacingPoint> Points { get; set; }
-        private List<int> PointsHash { get; set; }
 
         public bool ContainsPoint(Point point)
         {
-            var pointHashCodeNoFacing = point.hashCodeNoFacing;
-            var pointsHashCount = PointsHash.Count;
-            for (int i = 0; i < pointsHashCount; i++)
-            {
-                if (PointsHash[i] == pointHashCodeNoFacing)
-                    return true;
-            }
-            return false;
+            return ContainsPoint(point.hashCodeNoFacing);
         }
 
         internal bool ContainsPoint(int x, int y)
         {
             var pointHashCodeNoFacing = x * 1000 + y;
-            var pointsHashCount = PointsHash.Count;
+            return ContainsPoint(pointHashCodeNoFacing);
+        }
+        internal bool ContainsPoint(int hashCodeNoFacing)
+        {
+            var pointsHashCount = Points.Count;
             for (int i = 0; i < pointsHashCount; i++)
             {
-                if (PointsHash[i] == pointHashCodeNoFacing)
+                if (Points[i].hashCodeNoFacing == hashCodeNoFacing)
                     return true;
             }
             return false;
         }
+
         public void InsertPoint(FacingPoint movePoint)
         {
             Points.Insert(0, movePoint);
-            PointsHash.Insert(0, movePoint.hashCodeNoFacing);
         }
 
         public void RemoveLastPoint()
         {
             var last = Points.Count - 1;
             Points.RemoveAt(last);
-            PointsHash.RemoveAt(last);
-
         }
 
         public void SetFacing(Facing facing)
@@ -492,17 +482,6 @@ namespace ConsoleApplication2
             return $"{nameof(X)}: {X}, {nameof(Y)}: {Y}";
         }
 
-        protected bool Equals(Point other) => other.hashCodeNoFacing == hashCodeNoFacing;
-
-        public override bool Equals(object obj)
-        {
-            return hashCodeNoFacing == obj.GetHashCode();
-        }
-
-        public override int GetHashCode()
-        {
-            return hashCodeNoFacing;
-        }
 
         public Point(Point point)
         {
@@ -549,20 +528,7 @@ namespace ConsoleApplication2
         {
             return $"{nameof(Facing)}: {Facing} {base.ToString()}";
         }
-
-        protected bool Equals(FacingPoint other) => other.hashCode == hashCode;
-
-
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(this, obj)) return true;
-            return Equals((FacingPoint)obj);
-        }
-
-        public override int GetHashCode()
-        {
-            return hashCode;
-        }
+     
         public FacingPoint(FacingPoint point) : base(point)
         {
             Facing = point.Facing;
