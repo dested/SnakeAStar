@@ -34,7 +34,7 @@ namespace ConsoleApplication2
                         break;
                     }
                     Draw(board);
-                    Thread.Sleep(20);
+                    //                    Thread.Sleep(20);
                     //                    Console.ReadLine();
                     ticks++;
                 }
@@ -60,16 +60,26 @@ namespace ConsoleApplication2
             var gScore = new Dictionary<FacingPoint, double>();
             gScore[start] = 0;
 
-            var fScore = new Dictionary<FacingPoint, Tuple<FacingPoint, Snake, double>>();
-            fScore[start] = Tuple.Create(start, startSnake, distance(start, goal));
+            var fScore = new List<Tuple<FacingPoint, Snake, double>>();
+            fScore.Add(Tuple.Create(start, startSnake, distance(start, goal)));
 
 
             while (openSet.Count > 0)
             {
-                var keyValuePair = fScore.OrderBy(a => a.Value.Item3).First();
-                var currentItem = keyValuePair.Value;
-                var currentPoint = currentItem.Item1;
-                var currentSnake = currentItem.Item2;
+
+                var lowest = double.MaxValue;
+                Tuple<FacingPoint, Snake, double> item = null;
+                foreach (var tuple in fScore)
+                {
+                    if (tuple.Item3 <= lowest)
+                    {
+                        item = tuple;
+                        lowest = tuple.Item3;
+                    }
+                }
+                 
+                var currentPoint = item.Item1;
+                var currentSnake = item.Item2;
                 //                Console.WriteLine(currentPoint + " " + keyValuePair.Key);
                 //                Console.ReadLine();
 
@@ -107,13 +117,13 @@ namespace ConsoleApplication2
                         cameFrom[neighbor] = currentPoint;
                         gScore[neighbor] = tentative_gScore;
 
-                        fScore[neighbor] = Tuple.Create(neighbor, newSnake, distance(neighbor, goal));
+                        fScore.Add(Tuple.Create(neighbor, newSnake, distance(neighbor, goal)));
                         newPoint = true;
                     }
                 }
                 if (!newPoint)
                 {
-                    fScore.Remove(keyValuePair.Key);
+                    fScore.Remove(item);
                 }
 
             }
