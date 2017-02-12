@@ -1,4 +1,5 @@
-﻿using System;
+﻿//#define check
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -56,12 +57,12 @@ namespace SnakeAStar
 
             HashSet<int> closedSet = new HashSet<int>();
             HashSet<int> openSet = new HashSet<int> { start.hashCode };
-            Dictionary<int, FacingPoint> cameFrom = new Dictionary<int, FacingPoint>();
+            Dictionary<int, Point> cameFrom = new Dictionary<int, Point>();
 
             var gScore = new Dictionary<int, double>();
             gScore[start.hashCode] = 0;
 
-            var fScore = new List<Tuple<FacingPoint, Snake, double>>();
+            var fScore = new List<Tuple<Point, Snake, double>>();
             fScore.Add(Tuple.Create(start, startSnake, distance(start, goal)));
 
 
@@ -70,7 +71,7 @@ namespace SnakeAStar
 
                 var lowest = double.MaxValue;
                 int itemIndex = -1;
-                Tuple<FacingPoint, Snake, double> item = null;
+                Tuple<Point, Snake, double> item = null;
                 for (var index = 0; index < fScore.Count; index++)
                 {
                     var tuple = fScore[index];
@@ -135,10 +136,10 @@ namespace SnakeAStar
             return Facing.None;
         }
 
-        private static List<FacingPoint> reconstruct(Dictionary<int, FacingPoint> cameFrom, FacingPoint current)
+        private static List<Point> reconstruct(Dictionary<int, Point> cameFrom, Point current)
         {
-            List<FacingPoint> points = new List<FacingPoint>();
-            FacingPoint now;
+            List<Point> points = new List<Point>();
+            Point now;
             points.Add(current);
             now = cameFrom[current.hashCode];
 
@@ -158,30 +159,30 @@ namespace SnakeAStar
 
         }
 
-        private static FacingPoint[] neighborItems = new FacingPoint[3];
-        private static FacingPoint[] neighbors(FacingPoint current)
+        private static Point[] neighborItems = new Point[3];
+        private static Point[] neighbors(Point current)
         {
             switch (current.Facing)
             {
                 case Facing.Up:
-                    neighborItems[0] = FacingPoint.GetPoint(current.X, current.Y - 1, Facing.Up);
-                    neighborItems[1] = FacingPoint.GetPoint(current.X - 1, current.Y, Facing.Left);
-                    neighborItems[2] = FacingPoint.GetPoint(current.X + 1, current.Y, Facing.Right);
+                    neighborItems[0] = Point.GetPoint(current.X, current.Y - 1, Facing.Up);
+                    neighborItems[1] = Point.GetPoint(current.X - 1, current.Y, Facing.Left);
+                    neighborItems[2] = Point.GetPoint(current.X + 1, current.Y, Facing.Right);
                     break;
                 case Facing.Down:
-                    neighborItems[0] = FacingPoint.GetPoint(current.X, current.Y + 1, Facing.Down);
-                    neighborItems[1] = FacingPoint.GetPoint(current.X - 1, current.Y, Facing.Left);
-                    neighborItems[2] = FacingPoint.GetPoint(current.X + 1, current.Y, Facing.Right);
+                    neighborItems[0] = Point.GetPoint(current.X, current.Y + 1, Facing.Down);
+                    neighborItems[1] = Point.GetPoint(current.X - 1, current.Y, Facing.Left);
+                    neighborItems[2] = Point.GetPoint(current.X + 1, current.Y, Facing.Right);
                     break;
                 case Facing.Left:
-                    neighborItems[0] = FacingPoint.GetPoint(current.X - 1, current.Y, Facing.Left);
-                    neighborItems[1] = FacingPoint.GetPoint(current.X, current.Y - 1, Facing.Up);
-                    neighborItems[2] = FacingPoint.GetPoint(current.X, current.Y + 1, Facing.Down);
+                    neighborItems[0] = Point.GetPoint(current.X - 1, current.Y, Facing.Left);
+                    neighborItems[1] = Point.GetPoint(current.X, current.Y - 1, Facing.Up);
+                    neighborItems[2] = Point.GetPoint(current.X, current.Y + 1, Facing.Down);
                     break;
                 case Facing.Right:
-                    neighborItems[0] = FacingPoint.GetPoint(current.X + 1, current.Y, Facing.Right);
-                    neighborItems[1] = FacingPoint.GetPoint(current.X, current.Y - 1, Facing.Up);
-                    neighborItems[2] = FacingPoint.GetPoint(current.X, current.Y + 1, Facing.Down);
+                    neighborItems[0] = Point.GetPoint(current.X + 1, current.Y, Facing.Right);
+                    neighborItems[1] = Point.GetPoint(current.X, current.Y - 1, Facing.Up);
+                    neighborItems[2] = Point.GetPoint(current.X, current.Y + 1, Facing.Down);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -189,18 +190,17 @@ namespace SnakeAStar
             return neighborItems;
         }
 
-        private static double distance(FacingPoint start, Point goal)
+        private static double distance(Point start, Point goal)
         {
             var x1 = (goal.X - start.X);
             var y1 = (goal.Y - start.Y);
 
-            var x2 = (Program.Width - (goal.X - start.X));
-            var y2 = (Program.Height - (goal.Y - start.Y));
+            var x2 = (Width - (goal.X - start.X));
+            var y2 = (Height - (goal.Y - start.Y));
             var x = Math.Min(x1 * x1, x2 * x2);
             var y = Math.Min(y1 * y1, y2 * y2);
 
             var result = Math.Sqrt(x + y);
-
 
             return result;
         }
@@ -211,7 +211,6 @@ namespace SnakeAStar
             {
                 for (int x = 0; x < board.Width; x++)
                 {
-
                     if (board.Dot.X == x && board.Dot.Y == y)
                     {
                         ConsoleManager.SetPosition(x, y, 'X');
@@ -266,8 +265,8 @@ namespace SnakeAStar
 
     public class Board
     {
-        public int Width { get; }
-        public int Height { get; }
+        public readonly int Width;
+        public readonly int Height;
 
         public static Board Start(int width, int height, int startX, int startY, Facing facing)
         {
@@ -290,25 +289,26 @@ namespace SnakeAStar
             Dot = original.Dot;
             Snake = new Snake(original.Snake);
         }
-        public Snake Snake { get; set; }
-        public Point Dot { get; set; }
+
+        public Snake Snake;
+        public Point Dot;
 
         public bool Tick(bool real = true)
         {
-            FacingPoint movePoint;
+            Point movePoint;
             switch (Snake.Head.Facing)
             {
                 case Facing.Up:
-                    movePoint = FacingPoint.GetPoint(Snake.Head.X, Snake.Head.Y - 1, Snake.Head.Facing);
+                    movePoint = Point.GetPoint(Snake.Head.X, Snake.Head.Y - 1, Snake.Head.Facing);
                     break;
                 case Facing.Down:
-                    movePoint = FacingPoint.GetPoint(Snake.Head.X, Snake.Head.Y + 1, Snake.Head.Facing);
+                    movePoint = Point.GetPoint(Snake.Head.X, Snake.Head.Y + 1, Snake.Head.Facing);
                     break;
                 case Facing.Left:
-                    movePoint = FacingPoint.GetPoint(Snake.Head.X - 1, Snake.Head.Y, Snake.Head.Facing);
+                    movePoint = Point.GetPoint(Snake.Head.X - 1, Snake.Head.Y, Snake.Head.Facing);
                     break;
                 case Facing.Right:
-                    movePoint = FacingPoint.GetPoint(Snake.Head.X + 1, Snake.Head.Y, Snake.Head.Facing);
+                    movePoint = Point.GetPoint(Snake.Head.X + 1, Snake.Head.Y, Snake.Head.Facing);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -318,10 +318,10 @@ namespace SnakeAStar
             {
                 return false;
             }
-            Snake.InsertPoint(movePoint);
 
             if (movePoint.hashCodeNoFacing == Dot.hashCodeNoFacing)
             {
+                Snake.InsertPoint(movePoint);
                 if (real)
                 {
                     newDot();
@@ -329,7 +329,7 @@ namespace SnakeAStar
             }
             else
             {
-                Snake.RemoveLastPoint();
+                Snake.InsertAndMove(movePoint);
             }
             return true;
         }
@@ -340,7 +340,7 @@ namespace SnakeAStar
         {
             while (true)
             {
-                Dot = new Point(r.Next(0, Width), r.Next(0, Height));
+                Dot = Point.GetPoint(r.Next(0, Width), r.Next(0, Height), Facing.None);
                 if (!Snake.ContainsPoint(Dot))
                 {
                     break;
@@ -353,23 +353,23 @@ namespace SnakeAStar
     {
         public Snake(int x, int y, Facing facing)
         {
-            var facingPoint = FacingPoint.GetPoint(x, y, facing);
-            Points = new List<FacingPoint>(2) { facingPoint };
+            var facingPoint = Point.GetPoint(x, y, facing);
+            Points = new List<Point>(2) { facingPoint };
         }
 
         public Snake(Snake original)
         {
-            Points = new List<FacingPoint>(original.Points.Count + 1);
+            Points = new List<Point>(original.Points.Count + 1);
             Points.AddRange(original.Points);
         }
 
-        public FacingPoint Head
+        public Point Head
         {
             get { return Points[0]; }
             set { Points[0] = value; }
         }
 
-        public List<FacingPoint> Points { get; set; }
+        public List<Point> Points;
 
         public bool ContainsPoint(Point point)
         {
@@ -392,29 +392,30 @@ namespace SnakeAStar
             return false;
         }
 
-        public void InsertPoint(FacingPoint movePoint)
+        public void InsertPoint(Point movePoint)
         {
             Points.Insert(0, movePoint);
         }
 
-        public void RemoveLastPoint()
+        public void InsertAndMove(Point movePoint)
         {
+            Points.Insert(0, movePoint);
             var last = Points.Count - 1;
             Points.RemoveAt(last);
         }
 
         public void SetFacing(Facing facing)
         {
+#if check
             switch (Head.Facing)
             {
                 case Facing.Up:
-
                     switch (facing)
                     {
                         case Facing.Up:
                         case Facing.Left:
                         case Facing.Right:
-                            Head = FacingPoint.GetPoint(Head.X, Head.Y, facing);
+                            Head = Point.GetPoint(Head.X, Head.Y, facing);
                             break;
                         case Facing.Down:
                             throw new Exception("Cannot set this facing");
@@ -429,7 +430,7 @@ namespace SnakeAStar
                         case Facing.Down:
                         case Facing.Left:
                         case Facing.Right:
-                            Head = FacingPoint.GetPoint(Head.X, Head.Y, facing);
+                            Head = Point.GetPoint(Head.X, Head.Y, facing);
                             break;
                         case Facing.Up:
                             throw new Exception("Cannot set this facing");
@@ -443,7 +444,7 @@ namespace SnakeAStar
                         case Facing.Up:
                         case Facing.Left:
                         case Facing.Down:
-                            Head = FacingPoint.GetPoint(Head.X, Head.Y, facing);
+                            Head = Point.GetPoint(Head.X, Head.Y, facing);
                             break;
                         case Facing.Right:
                             throw new Exception("Cannot set this facing");
@@ -457,7 +458,7 @@ namespace SnakeAStar
                         case Facing.Up:
                         case Facing.Right:
                         case Facing.Down:
-                            Head = FacingPoint.GetPoint(Head.X, Head.Y, facing);
+                            Head = Point.GetPoint(Head.X, Head.Y, facing);
                             break;
                         case Facing.Left:
                             throw new Exception("Cannot set this facing");
@@ -468,49 +469,35 @@ namespace SnakeAStar
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+#else
+            Head = Point.GetPoint(Head.X, Head.Y, facing);
+#endif
+
         }
 
     }
+
 
     public class Point
     {
-        public int hashCodeNoFacing;
-        public override string ToString()
-        {
-            return $"{nameof(X)}: {X}, {nameof(Y)}: {Y}";
-        }
+        static Dictionary<int, Point> facingPoints = new Dictionary<int, Point>();
 
-
-        public Point(int x, int y)
-        {
-            X = x;
-            Y = y;
-            hashCodeNoFacing = X * 100000 + Y;
-        }
-
-        public int X { get; }
-        public int Y { get; }
-    }
-
-    public class FacingPoint : Point
-    {
-        static Dictionary<int, FacingPoint> facingPoints = new Dictionary<int, FacingPoint>();
-
-        static FacingPoint()
+        static Point()
         {
             for (int x = 0; x < Program.Width; x++)
             {
                 for (int y = 0; y < Program.Height; y++)
                 {
-                    facingPoints.Add(x * 100000 + y * 50 + 1, new FacingPoint(x, y, Facing.Up));
-                    facingPoints.Add(x * 100000 + y * 50 + 2, new FacingPoint(x, y, Facing.Down));
-                    facingPoints.Add(x * 100000 + y * 50 + 3, new FacingPoint(x, y, Facing.Left));
-                    facingPoints.Add(x * 100000 + y * 50 + 4, new FacingPoint(x, y, Facing.Right));
+                    facingPoints.Add(x * 100000 + y * 50 + 1, new Point(x, y, Facing.Up));
+                    facingPoints.Add(x * 100000 + y * 50 + 2, new Point(x, y, Facing.Down));
+                    facingPoints.Add(x * 100000 + y * 50 + 3, new Point(x, y, Facing.Left));
+                    facingPoints.Add(x * 100000 + y * 50 + 4, new Point(x, y, Facing.Right));
+                    facingPoints.Add(x * 100000 + y * 50 + 5, new Point(x, y, Facing.None));
                 }
             }
         }
 
-        public static FacingPoint GetPoint(int x, int y, Facing facing)
+        public static Point GetPoint(int x, int y, Facing facing)
         {
             if (x < 0)
             {
@@ -535,16 +522,18 @@ namespace SnakeAStar
 
 
         public int hashCode;
-        public new int hashCodeNoFacing;
+        public int hashCodeNoFacing;
 
         public override string ToString()
         {
-            return $"{nameof(Facing)}: {Facing} {base.ToString()}";
+            return $"{nameof(Facing)}: {Facing} {X} {Y}";
         }
 
 
-        private FacingPoint(int x, int y, Facing facing) : base(x, y)
+        private Point(int x, int y, Facing facing)
         {
+            X = x;
+            Y = y;
             Facing = facing;
             generateHashCodes();
         }
@@ -555,10 +544,12 @@ namespace SnakeAStar
             hashCodeNoFacing = X * 100000 + Y;
         }
 
-        public Facing Facing { get; }
+        public readonly int X;
+        public readonly int Y;
+        public readonly Facing Facing;
     }
     public enum Facing
     {
-        Up = 1, Down = 2, Left = 3, Right = 4, None = 1000
+        Up = 1, Down = 2, Left = 3, Right = 4, None = 5
     }
 }
