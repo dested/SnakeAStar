@@ -33,9 +33,11 @@ namespace ConsoleApplication2
                         break;
                     }
                     Draw(board);
+
                     //                    Console.ReadLine();
                     ticks++;
                 }
+                if(board.Snake.Points.Count>200)
                 Console.ReadLine();
             }
         }
@@ -169,21 +171,16 @@ namespace ConsoleApplication2
 
         private static double distance(FacingPoint start, Point goal)
         {
-            var x = (goal.X - start.X);
-            var y = (goal.Y - start.Y);
+            var x1 = (goal.X - start.X);
+            var y1 = (goal.Y - start.Y);
 
-            var result = Math.Sqrt(x * x + y * y);
-            if (goal.X - start.X == 0)
-            {
-                if (goal.Y > start.Y && start.Facing == Facing.Up) return result + 3;
-                if (goal.Y < start.Y && start.Facing == Facing.Down) return result + 3;
-            }
+            var x2 = (Board._Width - (goal.X - start.X));
+            var y2 = (Board._Height - (goal.Y - start.Y));
+            var x = Math.Min(x1 * x1, x2 * x2);
+            var y = Math.Min(y1 * y1, y2 * y2);
 
-            if (goal.Y - start.Y == 0)
-            {
-                if (goal.X > start.X && start.Facing == Facing.Left) return result + 3;
-                if (goal.X < start.X && start.Facing == Facing.Right) return result + 3;
-            }
+            var result = Math.Sqrt(x + y);
+            
 
             return result;
         }
@@ -322,7 +319,7 @@ namespace ConsoleApplication2
             return true;
         }
 
-        static Random r = new Random(15694);
+        static Random r = new Random(15695);
 
         private void newDot()
         {
@@ -548,7 +545,7 @@ namespace ConsoleApplication2
         public override int GetHashCode()
         {
             return hashCode;
-        } 
+        }
         public FacingPoint(FacingPoint point) : base(point)
         {
             Facing = point.Facing;
