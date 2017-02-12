@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ConsoleApplication2
 {
@@ -54,7 +50,7 @@ namespace ConsoleApplication2
             var startBoard = new Board(board);
 
             HashSet<FacingPoint> closedSet = new HashSet<FacingPoint>();
-            HashSet<FacingPoint> openSet = new HashSet<FacingPoint>() { start };
+            HashSet<FacingPoint> openSet = new HashSet<FacingPoint> { start };
             Dictionary<FacingPoint, FacingPoint> cameFrom = new Dictionary<FacingPoint, FacingPoint>();
 
             var gScore = new Dictionary<FacingPoint, double>();
@@ -279,8 +275,8 @@ namespace ConsoleApplication2
 
         public Board(Board original)
         {
-            this.Width = original.Width;
-            this.Height = original.Height;
+            Width = original.Width;
+            Height = original.Height;
             Dot = original.Dot;
             Snake = new Snake(original.Snake);
         }
@@ -316,7 +312,7 @@ namespace ConsoleApplication2
             {
                 if (real)
                 {
-                    this.newDot();
+                    newDot();
                 }
             }
             else
@@ -332,8 +328,8 @@ namespace ConsoleApplication2
         {
             while (true)
             {
-                this.Dot = new Point(r.Next(0, Width), r.Next(0, Height));
-                if (!Snake.ContainsPoint(this.Dot))
+                Dot = new Point(r.Next(0, Width), r.Next(0, Height));
+                if (!Snake.ContainsPoint(Dot))
                 {
                     break;
                 }
@@ -346,17 +342,24 @@ namespace ConsoleApplication2
         public Snake(int x, int y, Facing facing)
         {
             var facingPoint = new FacingPoint(x, y, facing);
-            Points = new List<FacingPoint>() { facingPoint, };
-            PointsHash=new List<int>() { facingPoint.GetHashCode()};
+            Points = new List<FacingPoint>(2) { facingPoint };
+            PointsHash = new List<int>(2) { facingPoint.GetHashCodeNoFacing() };
         }
 
         public Snake(Snake original)
         {
-            this.Points = original.Points.Select(a => new FacingPoint(a)).ToList();
-            this.PointsHash = new List<int>(original.PointsHash);
+            Points = new List<FacingPoint>(original.Points.Count + 1);
+            Points.AddRange(original.Points);
+            PointsHash = new List<int>(original.PointsHash.Count);
+            PointsHash.AddRange(original.PointsHash);
         }
 
-        public FacingPoint Head => Points[0];
+        public FacingPoint Head
+        {
+            get { return Points[0]; }
+            set { Points[0] = value; }
+        }
+
         public List<FacingPoint> Points { get; set; }
         private List<int> PointsHash { get; set; }
 
@@ -394,7 +397,7 @@ namespace ConsoleApplication2
                         case Facing.Up:
                         case Facing.Left:
                         case Facing.Right:
-                            Head.Facing = facing;
+                            Head = new FacingPoint(Head.X, Head.Y, facing);
                             break;
                         case Facing.Down:
                             throw new Exception("Cannot set this facing");
@@ -409,7 +412,7 @@ namespace ConsoleApplication2
                         case Facing.Down:
                         case Facing.Left:
                         case Facing.Right:
-                            Head.Facing = facing;
+                            Head = new FacingPoint(Head.X, Head.Y, facing);
                             break;
                         case Facing.Up:
                             throw new Exception("Cannot set this facing");
@@ -423,7 +426,7 @@ namespace ConsoleApplication2
                         case Facing.Up:
                         case Facing.Left:
                         case Facing.Down:
-                            Head.Facing = facing;
+                            Head = new FacingPoint(Head.X, Head.Y, facing);
                             break;
                         case Facing.Right:
                             throw new Exception("Cannot set this facing");
@@ -437,7 +440,7 @@ namespace ConsoleApplication2
                         case Facing.Up:
                         case Facing.Right:
                         case Facing.Down:
-                            Head.Facing = facing;
+                            Head = new FacingPoint(Head.X, Head.Y, facing);
                             break;
                         case Facing.Left:
                             throw new Exception("Cannot set this facing");
@@ -463,21 +466,19 @@ namespace ConsoleApplication2
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
             return Equals((Point)obj);
         }
 
         public override int GetHashCode()
         {
-            return this.X * 1000 + this.Y;
+            return X * 1000 + Y;
         }
 
         public Point(Point point)
         {
-            this.X = point.X;
-            this.Y = point.Y;
+            X = point.X;
+            Y = point.Y;
         }
         public Point(int x, int y)
         {
@@ -500,12 +501,12 @@ namespace ConsoleApplication2
                 y -= Board._Height;
             }
 
-            this.X = x;
-            this.Y = y;
+            X = x;
+            Y = y;
         }
 
-        public int X { get; set; }
-        public int Y { get; set; }
+        public int X { get; }
+        public int Y { get; }
     }
 
     public class FacingPoint : Point
@@ -523,31 +524,29 @@ namespace ConsoleApplication2
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
             return Equals((Point)obj);
         }
 
         public override int GetHashCode()
         {
-            return this.X * 1000 + this.Y * 50 + (int)Facing;
+            return X * 1000 + Y * 50 + (int)Facing;
         }
         public int GetHashCodeNoFacing()
         {
-            return this.X * 1000 + this.Y;
+            return X * 1000 + Y;
         }
 
         public FacingPoint(FacingPoint point) : base(point)
         {
-            this.Facing = point.Facing;
+            Facing = point.Facing;
         }
         public FacingPoint(int x, int y, Facing facing) : base(x, y)
         {
             Facing = facing;
         }
 
-        public Facing Facing { get; set; }
+        public Facing Facing { get; }
     }
     public enum Facing
     {
