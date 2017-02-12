@@ -23,11 +23,11 @@ namespace ConsoleApplication2
                     if (!board.Tick())
                     {
                         Console.WriteLine($"Dead! {board.Snake.Points.Count} Length in {ticks} ticks.");
-                        Console.ReadLine();
+                        //                        Console.ReadLine();
                         break;
                     }
                     Draw(board);
-                    Console.ReadLine();
+                                        Console.ReadLine();
                     ticks++;
                 }
             }
@@ -40,6 +40,8 @@ namespace ConsoleApplication2
             var start = board.Snake.Head;
             var goal = board.Dot;
 
+            var startBoard = new Board(board);
+
             HashSet<FacingPoint> closedSet = new HashSet<FacingPoint>();
             HashSet<FacingPoint> openSet = new HashSet<FacingPoint>() { start };
             Dictionary<FacingPoint, FacingPoint> cameFrom = new Dictionary<FacingPoint, FacingPoint>();
@@ -47,27 +49,31 @@ namespace ConsoleApplication2
             var gScore = new Dictionary<FacingPoint, double>();
             gScore[start] = 0;
 
-            var fScore = new Dictionary<FacingPoint, double>();
-            fScore[start] = distance(start, goal);
+            var fScore = new SortedList<double, Tuple<FacingPoint, Board>>();
+            fScore[distance(start, goal)] = new Tuple<FacingPoint, Board>(start, startBoard);
 
 
-            while (openSet.Count > 0)
+            while (openSet.Count > 0 && fScore.Count>0)
             {
-                var current = fScore.OrderBy(a => a.Value).First().Key;
-                if (current.EqualsNoFacing(goal))
-                {
-                    return reconstruct(cameFrom, current);
-                }
-                openSet.Remove(current);
-                closedSet.Add(current);
+                var currentItem = fScore.First().Value;
+                var currentPoint = currentItem.Item1;
+                var currentBoard = currentItem.Item2;
 
-                foreach (var neighbor in neighbors(current))
+                if (currentPoint.EqualsNoFacing(goal))
+                {
+                    return reconstruct(cameFrom, currentPoint);
+                }
+                openSet.Remove(currentPoint);
+                closedSet.Add(currentPoint);
+                fScore.RemoveAt(0);
+
+                foreach (var neighbor in neighbors(currentPoint))
                 {
                     if (closedSet.Contains(neighbor))
                     {
                         continue;
                     }
-                    var tentative_gScore = gScore[current] + distance(current, neighbor);
+                    var tentative_gScore = gScore[currentPoint] + distance(currentPoint, neighbor);
 
                     if (!openSet.Contains(neighbor))
                     {
@@ -77,16 +83,22 @@ namespace ConsoleApplication2
                     {
                         continue;
                     }
-                    cameFrom[neighbor] = current;
+                     
+                    cameFrom[neighbor] = currentPoint;
                     gScore[neighbor] = tentative_gScore;
-                    fScore[neighbor] = gScore[neighbor] + distance(neighbor, goal);
+
+                    var newBoard = new Board(currentBoard);
+                    newBoard.Snake.SetFacing(neighbor.Facing);
+                    if ( newBoard.Tick())
+                    {
+                        fScore[gScore[neighbor] + distance(neighbor, goal)] = Tuple.Create(neighbor, newBoard);
+                    }
                 }
-                fScore.Remove(current);
 
             }
 
 
-
+            Console.WriteLine("No more moves");
             return Facing.Down;
 
 
@@ -287,14 +299,12 @@ namespace ConsoleApplication2
 
             if (movePoint.X < 0 || movePoint.Y < 0 || movePoint.X >= Width || movePoint.Y >= Height)
             {
-                    Console.WriteLine("Hit Wall");
                 return false;
             }
             foreach (var snakePoint in Snake.Points)
             {
                 if (snakePoint.EqualsNoFacing(movePoint))
                 {
-                    Console.WriteLine("Hixt Self");
                     return false;
                 }
             }
