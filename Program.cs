@@ -53,12 +53,12 @@ namespace ConsoleApplication2
             var fakeBoard = new Board(board);
             var startSnake = new Snake(board.Snake);
 
-            HashSet<FacingPoint> closedSet = new HashSet<FacingPoint>();
-            HashSet<FacingPoint> openSet = new HashSet<FacingPoint> { start };
-            Dictionary<FacingPoint, FacingPoint> cameFrom = new Dictionary<FacingPoint, FacingPoint>();
+            HashSet<int> closedSet = new HashSet<int>();
+            HashSet<int> openSet = new HashSet<int> { start.hashCode };
+            Dictionary<int, FacingPoint> cameFrom = new Dictionary<int, FacingPoint>();
 
-            var gScore = new Dictionary<FacingPoint, double>();
-            gScore[start] = 0;
+            var gScore = new Dictionary<int, double>();
+            gScore[start.hashCode] = 0;
 
             var fScore = new List<Tuple<FacingPoint, Snake, double>>();
             fScore.Add(Tuple.Create(start, startSnake, distance(start, goal)));
@@ -77,18 +77,18 @@ namespace ConsoleApplication2
                         lowest = tuple.Item3;
                     }
                 }
-                 
+
                 var currentPoint = item.Item1;
                 var currentSnake = item.Item2;
                 //                Console.WriteLine(currentPoint + " " + keyValuePair.Key);
                 //                Console.ReadLine();
 
-                if (currentPoint.EqualsNoFacing(goal))
+                if (currentPoint.hashCodeNoFacing == goal.hashCodeNoFacing)
                 {
                     return reconstruct(cameFrom, currentPoint)[0].Facing;
                 }
-                openSet.Remove(currentPoint);
-                closedSet.Add(currentPoint);
+                openSet.Remove(currentPoint.hashCode);
+                closedSet.Add(currentPoint.hashCode);
                 var newPoint = false;
                 foreach (var neighbor in neighbors(currentPoint))
                 {
@@ -99,23 +99,23 @@ namespace ConsoleApplication2
 
                     if (fakeBoard.Tick(false))
                     {
-                        if (closedSet.Contains(neighbor))
+                        if (closedSet.Contains(neighbor.hashCode))
                         {
                             continue;
                         }
-                        var tentative_gScore = gScore[currentPoint] + distance(currentPoint, neighbor);
+                        var tentative_gScore = gScore[currentPoint.hashCode] + distance(currentPoint, neighbor);
 
-                        if (!openSet.Contains(neighbor))
+                        if (!openSet.Contains(neighbor.hashCode))
                         {
-                            openSet.Add(neighbor);
+                            openSet.Add(neighbor.hashCode);
                         }
-                        else if (tentative_gScore >= gScore[neighbor])
+                        else if (tentative_gScore >= gScore[neighbor.hashCode])
                         {
                             continue;
                         }
 
-                        cameFrom[neighbor] = currentPoint;
-                        gScore[neighbor] = tentative_gScore;
+                        cameFrom[neighbor.hashCode] = currentPoint;
+                        gScore[neighbor.hashCode] = tentative_gScore;
 
                         fScore.Add(Tuple.Create(neighbor, newSnake, distance(neighbor, goal)));
                         newPoint = true;
@@ -131,17 +131,17 @@ namespace ConsoleApplication2
             return Facing.None;
         }
 
-        private static List<FacingPoint> reconstruct(Dictionary<FacingPoint, FacingPoint> cameFrom, FacingPoint current)
+        private static List<FacingPoint> reconstruct(Dictionary<int, FacingPoint> cameFrom, FacingPoint current)
         {
             List<FacingPoint> points = new List<FacingPoint>();
             FacingPoint now;
             points.Add(current);
-            now = cameFrom[current];
+            now = cameFrom[current.hashCode];
 
-            while (cameFrom.ContainsKey(now))
+            while (cameFrom.ContainsKey(now.hashCode))
             {
                 points.Add(now);
-                now = cameFrom[now];
+                now = cameFrom[now.hashCode];
             }
             points.Reverse();
             return points;
@@ -202,6 +202,7 @@ namespace ConsoleApplication2
 
         private static void Draw(Board board)
         {
+            return;
             for (int y = 0; y < board.Height; y++)
             {
                 for (int x = 0; x < board.Width; x++)
@@ -319,7 +320,7 @@ namespace ConsoleApplication2
             }
             Snake.InsertPoint(movePoint);
 
-            if (movePoint.EqualsNoFacing(Dot))
+            if (movePoint.hashCodeNoFacing == Dot.hashCodeNoFacing)
             {
                 if (real)
                 {
@@ -538,8 +539,8 @@ namespace ConsoleApplication2
 
     public class FacingPoint : Point
     {
-        private int hashCode;
-        private int hashCodeNoFacing;
+        public int hashCode;
+        public new int hashCodeNoFacing;
 
         public override string ToString()
         {
@@ -548,12 +549,11 @@ namespace ConsoleApplication2
 
         protected bool Equals(FacingPoint other) => other.hashCode == hashCode;
 
-        public bool EqualsNoFacing(Point other) => other.hashCodeNoFacing == hashCodeNoFacing;
 
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(this, obj)) return true;
-            return Equals((Point)obj);
+            return Equals((FacingPoint)obj);
         }
 
         public override int GetHashCode()
