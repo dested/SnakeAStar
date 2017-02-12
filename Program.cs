@@ -14,6 +14,9 @@ namespace ConsoleApplication2
         {
             while (true)
             {
+
+                Console.Clear();
+
                 int ticks = 0;
                 var board = Board.Start(30, 30, 3, 3, Facing.Up);
                 Draw(board);
@@ -22,20 +25,22 @@ namespace ConsoleApplication2
                     var facing = GetInput(board);
                     if (facing == Facing.None)
                     {
+                        Console.SetCursorPosition(0, board.Height+2);
                         Console.WriteLine($"Dead! {board.Snake.Points.Count} Length in {ticks} ticks.");
                         break;
                     }
                     board.Snake.SetFacing(facing);
                     if (!board.Tick())
                     {
+                        Console.SetCursorPosition(0, board.Height + 2);
                         Console.WriteLine($"Dead! {board.Snake.Points.Count} Length in {ticks} ticks.");
-                        //                        Console.ReadLine();
                         break;
                     }
                     Draw(board);
-                    Console.ReadLine();
+                    //                    Console.ReadLine();
                     ticks++;
                 }
+                Console.ReadLine();
             }
         }
 
@@ -65,8 +70,8 @@ namespace ConsoleApplication2
                 var currentItem = keyValuePair.Value;
                 var currentPoint = currentItem.Item1;
                 var currentBoard = currentItem.Item2;
-//                Console.WriteLine(currentPoint + " " + keyValuePair.Key);
-//                Console.ReadLine();
+                //                Console.WriteLine(currentPoint + " " + keyValuePair.Key);
+                //                Console.ReadLine();
 
                 if (currentPoint.EqualsNoFacing(goal))
                 {
@@ -110,43 +115,7 @@ namespace ConsoleApplication2
 
             }
 
-
-            Console.WriteLine("No more moves");
             return Facing.None;
-
-
-            if (board.Dot.X < board.Snake.Head.X)
-            {
-                if (board.Snake.Head.Facing != Facing.Right)
-                {
-
-                    return Facing.Left;
-                }
-            }
-            else if (board.Dot.X > board.Snake.Head.X)
-            {
-                if (board.Snake.Head.Facing != Facing.Left)
-                {
-                    return Facing.Right;
-                }
-            }
-
-
-            if (board.Dot.Y < board.Snake.Head.Y)
-            {
-                if (board.Snake.Head.Facing != Facing.Down)
-                {
-                    return Facing.Up;
-                }
-            }
-            else if (board.Dot.Y > board.Snake.Head.Y)
-            {
-                if (board.Snake.Head.Facing != Facing.Up)
-                {
-                    return Facing.Down;
-                }
-            }
-            return Facing.Down;
         }
 
         private static List<FacingPoint> reconstruct(Dictionary<FacingPoint, FacingPoint> cameFrom, FacingPoint current)
@@ -284,11 +253,15 @@ namespace ConsoleApplication2
 
     public class Board
     {
+        public static int _Width;
+        public static int _Height;
         public int Width { get; }
         public int Height { get; }
 
         public static Board Start(int width, int height, int startX, int startY, Facing facing)
         {
+            _Width = width;
+            _Height = height;
             var board = new Board(width, height);
             board.Snake = new Snake(startX, startY, facing);
             board.newDot();
@@ -333,10 +306,6 @@ namespace ConsoleApplication2
                     throw new ArgumentOutOfRangeException();
             }
 
-            if (movePoint.X < 0 || movePoint.Y < 0 || movePoint.X >= Width || movePoint.Y >= Height)
-            {
-                return false;
-            }
             foreach (var snakePoint in Snake.Points)
             {
                 if (snakePoint.EqualsNoFacing(movePoint))
@@ -360,7 +329,7 @@ namespace ConsoleApplication2
             return true;
         }
 
-        Random r = new Random(15698);
+       static Random r = new Random(15694);
 
         private void newDot()
         {
@@ -497,6 +466,25 @@ namespace ConsoleApplication2
         }
         public Point(int x, int y)
         {
+            if (x < 0)
+            {
+                x += Board._Width;
+            }
+            if (x >= Board._Width)
+            {
+                x -= Board._Width;
+            }
+
+
+            if (y < 0)
+            {   
+                y += Board._Height;
+            }   
+            if (y >= Board._Height)
+            {   
+                y -= Board._Height;
+            }
+
             this.X = x;
             this.Y = y;
         }
@@ -544,6 +532,6 @@ namespace ConsoleApplication2
     }
     public enum Facing
     {
-        Up = 1, Down = 2, Left = 3, Right = 4,None=1000
+        Up = 1, Down = 2, Left = 3, Right = 4, None = 1000
     }
 }
