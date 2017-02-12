@@ -19,7 +19,13 @@ namespace ConsoleApplication2
                 Draw(board);
                 while (true)
                 {
-                    board.Snake.SetFacing(GetInput(board));
+                    var facing = GetInput(board);
+                    if (facing == Facing.None)
+                    {
+                        Console.WriteLine($"Dead! {board.Snake.Points.Count} Length in {ticks} ticks.");
+                        break;
+                    }
+                    board.Snake.SetFacing(facing);
                     if (!board.Tick())
                     {
                         Console.WriteLine($"Dead! {board.Snake.Points.Count} Length in {ticks} ticks.");
@@ -49,22 +55,26 @@ namespace ConsoleApplication2
             var gScore = new Dictionary<FacingPoint, double>();
             gScore[start] = 0;
 
-            var fScore = new SortedList<double, Tuple<FacingPoint, Board>>();
-            fScore[distance(start, goal)] = new Tuple<FacingPoint, Board>(start, startBoard);
+            var fScore = new Dictionary<FacingPoint, Tuple<FacingPoint, Board, double>>();
+            fScore[start] = Tuple.Create(start, startBoard, distance(start, goal));
 
 
             while (openSet.Count > 0)
             {
-                var keyValuePair = fScore.First();
+                var keyValuePair = fScore.OrderBy(a => a.Value.Item3).First();
                 var currentItem = keyValuePair.Value;
                 var currentPoint = currentItem.Item1;
                 var currentBoard = currentItem.Item2;
+//                Console.WriteLine(currentPoint + " " + keyValuePair.Key);
+//                Console.ReadLine();
+
                 if (currentPoint.EqualsNoFacing(goal))
                 {
                     return reconstruct(cameFrom, currentPoint)[0].Facing;
                 }
                 openSet.Remove(currentPoint);
                 closedSet.Add(currentPoint);
+                var newPoint = false;
                 foreach (var neighbor in neighbors(currentPoint))
                 {
                     var newBoard = new Board(currentBoard);
@@ -89,15 +99,20 @@ namespace ConsoleApplication2
                         cameFrom[neighbor] = currentPoint;
                         gScore[neighbor] = tentative_gScore;
 
-                        fScore[distance(neighbor, goal)] = Tuple.Create(neighbor, newBoard);
+                        fScore[neighbor] = Tuple.Create(neighbor, newBoard, distance(neighbor, goal));
+                        newPoint = true;
                     }
+                }
+                if (!newPoint)
+                {
+                    fScore.Remove(keyValuePair.Key);
                 }
 
             }
 
 
             Console.WriteLine("No more moves");
-            return Facing.Down;
+            return Facing.None;
 
 
             if (board.Dot.X < board.Snake.Head.X)
@@ -529,6 +544,6 @@ namespace ConsoleApplication2
     }
     public enum Facing
     {
-        Up = 1, Down = 2, Left = 3, Right = 4
+        Up = 1, Down = 2, Left = 3, Right = 4,None=1000
     }
 }
