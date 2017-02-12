@@ -68,13 +68,16 @@ namespace ConsoleApplication2
             {
 
                 var lowest = double.MaxValue;
+                int itemIndex = -1;
                 Tuple<FacingPoint, Snake, double> item = null;
-                foreach (var tuple in fScore)
+                for (var index = 0; index < fScore.Count; index++)
                 {
+                    var tuple = fScore[index];
                     if (tuple.Item3 <= lowest)
                     {
                         item = tuple;
                         lowest = tuple.Item3;
+                        itemIndex = index;
                     }
                 }
 
@@ -123,7 +126,7 @@ namespace ConsoleApplication2
                 }
                 if (!newPoint)
                 {
-                    fScore.Remove(item);
+                    fScore.RemoveAt(itemIndex);
                 }
 
             }
@@ -154,34 +157,35 @@ namespace ConsoleApplication2
 
         }
 
-        private static IEnumerable<FacingPoint> neighbors(FacingPoint current)
+        private static FacingPoint[] neighborItems = new FacingPoint[3];
+        private static FacingPoint[] neighbors(FacingPoint current)
         {
             switch (current.Facing)
             {
                 case Facing.Up:
-                    yield return new FacingPoint(current.X, current.Y - 1, Facing.Up);
-                    yield return new FacingPoint(current.X - 1, current.Y, Facing.Left);
-                    yield return new FacingPoint(current.X + 1, current.Y, Facing.Right);
+                    neighborItems[0] = new FacingPoint(current.X, current.Y - 1, Facing.Up);
+                    neighborItems[1] = new FacingPoint(current.X - 1, current.Y, Facing.Left);
+                    neighborItems[2] = new FacingPoint(current.X + 1, current.Y, Facing.Right);
                     break;
                 case Facing.Down:
-                    yield return new FacingPoint(current.X, current.Y + 1, Facing.Down);
-                    yield return new FacingPoint(current.X - 1, current.Y, Facing.Left);
-                    yield return new FacingPoint(current.X + 1, current.Y, Facing.Right);
+                    neighborItems[0] = new FacingPoint(current.X, current.Y + 1, Facing.Down);
+                    neighborItems[1] = new FacingPoint(current.X - 1, current.Y, Facing.Left);
+                    neighborItems[2] = new FacingPoint(current.X + 1, current.Y, Facing.Right);
                     break;
                 case Facing.Left:
-                    yield return new FacingPoint(current.X - 1, current.Y, Facing.Left);
-                    yield return new FacingPoint(current.X, current.Y - 1, Facing.Up);
-                    yield return new FacingPoint(current.X, current.Y + 1, Facing.Down);
+                    neighborItems[0] = new FacingPoint(current.X - 1, current.Y, Facing.Left);
+                    neighborItems[1] = new FacingPoint(current.X, current.Y - 1, Facing.Up);
+                    neighborItems[2] = new FacingPoint(current.X, current.Y + 1, Facing.Down);
                     break;
                 case Facing.Right:
-                    yield return new FacingPoint(current.X + 1, current.Y, Facing.Right);
-                    yield return new FacingPoint(current.X, current.Y - 1, Facing.Up);
-                    yield return new FacingPoint(current.X, current.Y + 1, Facing.Down);
+                    neighborItems[0] = new FacingPoint(current.X + 1, current.Y, Facing.Right);
+                    neighborItems[1] = new FacingPoint(current.X, current.Y - 1, Facing.Up);
+                    neighborItems[2] = new FacingPoint(current.X, current.Y + 1, Facing.Down);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-
+            return neighborItems;
         }
 
         private static double distance(FacingPoint start, Point goal)
@@ -202,7 +206,6 @@ namespace ConsoleApplication2
 
         private static void Draw(Board board)
         {
-            return;
             for (int y = 0; y < board.Height; y++)
             {
                 for (int x = 0; x < board.Width; x++)
