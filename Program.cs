@@ -25,7 +25,7 @@ namespace ConsoleApplication2
                     var facing = GetInput(board);
                     if (facing == Facing.None)
                     {
-                        Console.SetCursorPosition(0, board.Height+2);
+                        Console.SetCursorPosition(0, board.Height + 2);
                         Console.WriteLine($"Dead! {board.Snake.Points.Count} Length in {ticks} ticks.");
                         break;
                     }
@@ -203,7 +203,7 @@ namespace ConsoleApplication2
                     {
                         ConsoleManager.SetPosition(x, y, 'X');
                     }
-                    else if (board.Snake.Points.Any(a => a.X == x && a.Y == y))
+                    else if (board.Snake.ContainsPoint(x, y))
                     {
                         if (board.Snake.Head.X == x && board.Snake.Head.Y == y)
                         {
@@ -306,14 +306,11 @@ namespace ConsoleApplication2
                     throw new ArgumentOutOfRangeException();
             }
 
-            foreach (var snakePoint in Snake.Points)
+            if (Snake.ContainsPoint(movePoint))
             {
-                if (snakePoint.EqualsNoFacing(movePoint))
-                {
-                    return false;
-                }
+                return false;
             }
-            Snake.Points.Insert(0, movePoint);
+            Snake.InsertPoint(movePoint);
 
             if (movePoint.EqualsNoFacing(Dot))
             {
@@ -324,33 +321,23 @@ namespace ConsoleApplication2
             }
             else
             {
-                Snake.Points.RemoveAt(Snake.Points.Count - 1);
+                Snake.RemoveLastPoint();
             }
             return true;
         }
 
-       static Random r = new Random(15694);
+        static Random r = new Random(15694);
 
         private void newDot()
         {
             while (true)
             {
-                var good = true;
                 this.Dot = new Point(r.Next(0, Width), r.Next(0, Height));
-                foreach (var snakePoint in Snake.Points)
-                {
-                    if (snakePoint.EqualsNoFacing(this.Dot))
-                    {
-                        good = false;
-                        break;
-                    }
-                }
-                if (good)
+                if (!Snake.ContainsPoint(this.Dot))
                 {
                     break;
                 }
             }
-
         }
     }
 
@@ -358,16 +345,43 @@ namespace ConsoleApplication2
     {
         public Snake(int x, int y, Facing facing)
         {
-            Points = new List<FacingPoint>() { new FacingPoint(x, y, facing), };
+            var facingPoint = new FacingPoint(x, y, facing);
+            Points = new List<FacingPoint>() { facingPoint, };
+            PointsHash=new List<int>() { facingPoint.GetHashCode()};
         }
 
         public Snake(Snake original)
         {
             this.Points = original.Points.Select(a => new FacingPoint(a)).ToList();
+            this.PointsHash = new List<int>(original.PointsHash);
         }
 
         public FacingPoint Head => Points[0];
         public List<FacingPoint> Points { get; set; }
+        private List<int> PointsHash { get; set; }
+
+        public bool ContainsPoint(Point point)
+        {
+            return PointsHash.Contains(point.X * 1000 + point.Y);
+        }
+
+        internal bool ContainsPoint(int x, int y)
+        {
+            return PointsHash.Contains(x * 1000 + y);
+        }
+        public void InsertPoint(FacingPoint movePoint)
+        {
+            Points.Insert(0, movePoint);
+            PointsHash.Add(movePoint.GetHashCodeNoFacing());
+        }
+
+        public void RemoveLastPoint()
+        {
+            var point = Points[Points.Count - 1];
+            Points.RemoveAt(Points.Count - 1);
+            PointsHash.Remove(point.GetHashCodeNoFacing());
+
+        }
 
         public void SetFacing(Facing facing)
         {
@@ -435,6 +449,7 @@ namespace ConsoleApplication2
                     throw new ArgumentOutOfRangeException();
             }
         }
+
     }
 
     public class Point
@@ -477,11 +492,11 @@ namespace ConsoleApplication2
 
 
             if (y < 0)
-            {   
+            {
                 y += Board._Height;
-            }   
+            }
             if (y >= Board._Height)
-            {   
+            {
                 y -= Board._Height;
             }
 
@@ -517,6 +532,10 @@ namespace ConsoleApplication2
         public override int GetHashCode()
         {
             return this.X * 1000 + this.Y * 50 + (int)Facing;
+        }
+        public int GetHashCodeNoFacing()
+        {
+            return this.X * 1000 + this.Y;
         }
 
         public FacingPoint(FacingPoint point) : base(point)
