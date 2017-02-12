@@ -22,7 +22,6 @@ namespace ConsoleApplication2
                     board.Snake.SetFacing(GetInput(board));
                     if (!board.Tick())
                     {
-                        Draw(board);
                         Console.WriteLine($"Dead! {board.Snake.Points.Count} Length in {ticks} ticks.");
                         Console.ReadLine();
                         break;
@@ -50,14 +49,14 @@ namespace ConsoleApplication2
 
             var fScore = new Dictionary<FacingPoint, double>();
             fScore[start] = distance(start, goal);
-    
+
 
             while (openSet.Count > 0)
             {
                 var current = fScore.OrderBy(a => a.Value).First().Key;
                 if (current.EqualsNoFacing(goal))
                 {
-                    return cameFrom.First().Key.Facing;
+                    return reconstruct(cameFrom, current);
                 }
                 openSet.Remove(current);
                 closedSet.Add(current);
@@ -85,7 +84,7 @@ namespace ConsoleApplication2
                 fScore.Remove(current);
 
             }
-            
+
 
 
             return Facing.Down;
@@ -125,6 +124,31 @@ namespace ConsoleApplication2
             return Facing.Down;
         }
 
+        private static Facing reconstruct(Dictionary<FacingPoint, FacingPoint> cameFrom, FacingPoint current)
+        {
+            List<FacingPoint> points = new List<FacingPoint>();
+            FacingPoint now;
+            points.Add(current);
+            now = cameFrom[current];
+
+            while (cameFrom.ContainsKey(now))
+            {
+                points.Add(now);
+                now = cameFrom[now];
+            }
+            points.Add(now);
+
+            points.Reverse();
+            return points[1].Facing;
+
+            /*       total_path := [current]
+       while current in cameFrom.Keys:
+           current:= cameFrom[current]
+           total_path.append(current)
+       return total_path*/
+
+        }
+
         private static IEnumerable<FacingPoint> neighbors(FacingPoint current)
         {
             switch (current.Facing)
@@ -159,7 +183,21 @@ namespace ConsoleApplication2
         {
             var x = (goal.X - start.X);
             var y = (goal.Y - start.Y);
-            return Math.Sqrt(x * x + y * y);
+
+            var result = Math.Sqrt(x * x + y * y);
+            if (goal.X - start.X == 0)
+            {
+                if (goal.Y > start.Y && start.Facing == Facing.Up) return result + 3;
+                if (goal.Y < start.Y && start.Facing == Facing.Down) return result + 3;
+            }
+
+            if (goal.Y - start.Y == 0)
+            {
+                if (goal.X > start.X && start.Facing == Facing.Left) return result + 3;
+                if (goal.X < start.X && start.Facing == Facing.Right) return result + 3;
+            }
+
+            return result;
         }
 
         private static void Draw(Board board)
@@ -249,12 +287,14 @@ namespace ConsoleApplication2
 
             if (movePoint.X < 0 || movePoint.Y < 0 || movePoint.X >= Width || movePoint.Y >= Height)
             {
+                    Console.WriteLine("Hit Wall");
                 return false;
             }
             foreach (var snakePoint in Snake.Points)
             {
                 if (snakePoint.EqualsNoFacing(movePoint))
                 {
+                    Console.WriteLine("Hixt Self");
                     return false;
                 }
             }
@@ -271,7 +311,7 @@ namespace ConsoleApplication2
             return true;
         }
 
-        Random r = new Random();
+        Random r = new Random(15698);
 
         private void newDot()
         {
@@ -381,6 +421,11 @@ namespace ConsoleApplication2
 
     public class Point
     {
+        public override string ToString()
+        {
+            return $"{nameof(X)}: {X}, {nameof(Y)}: {Y}";
+        }
+
         protected bool Equals(Point other) => other.X == X && other.Y == Y;
 
         public override bool Equals(object obj)
@@ -413,6 +458,11 @@ namespace ConsoleApplication2
 
     public class FacingPoint : Point
     {
+        public override string ToString()
+        {
+            return $"{nameof(Facing)}: {Facing} {base.ToString()}";
+        }
+
         protected bool Equals(FacingPoint other) =>
             other.X == X && other.Y == Y && other.Facing == Facing;
 
