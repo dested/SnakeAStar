@@ -16,7 +16,13 @@ namespace ConsoleApplication2
             while (true)
             {
                 GetInput(board);
-                board.Tick();
+                if (!board.Tick())
+                {
+                    Console.WriteLine($"Dead! {board.Snake.Points.Count} Length");
+
+                    Console.ReadLine();
+                    break;
+                }
                 Draw(board);
             }
         }
@@ -25,7 +31,7 @@ namespace ConsoleApplication2
         {
             if (board.Dot.X < board.Snake.Head.X)
             {
-                if (board.Snake.Facing != Facing.Left)
+                if (board.Snake.Facing != Facing.Left && board.Snake.Facing != Facing.Right)
                 {
                     board.Snake.SetFacing(Facing.Left);
                     return;
@@ -33,7 +39,7 @@ namespace ConsoleApplication2
             }
             else if (board.Dot.X > board.Snake.Head.X)
             {
-                if (board.Snake.Facing != Facing.Right)
+                if (board.Snake.Facing != Facing.Right && board.Snake.Facing != Facing.Left)
                 {
                     board.Snake.SetFacing(Facing.Right);
                     return;
@@ -43,7 +49,7 @@ namespace ConsoleApplication2
 
             if (board.Dot.Y < board.Snake.Head.Y)
             {
-                if (board.Snake.Facing != Facing.Up)
+                if (board.Snake.Facing != Facing.Up && board.Snake.Facing != Facing.Down)
                 {
                     board.Snake.SetFacing(Facing.Up);
                     return;
@@ -51,12 +57,16 @@ namespace ConsoleApplication2
             }
             else if (board.Dot.Y > board.Snake.Head.Y)
             {
-                if (board.Snake.Facing != Facing.Down)
+                if (board.Snake.Facing != Facing.Down && board.Snake.Facing != Facing.Up)
                 {
-                    board.Snake.SetFacing(Facing.Right);
+                    board.Snake.SetFacing(Facing.Down);
                     return;
                 }
             }
+
+
+
+
         }
 
         private static void Draw(Board board)
@@ -123,7 +133,7 @@ namespace ConsoleApplication2
             Snake = new Snake(original.Snake);
         }
 
-        public void Tick()
+        public bool Tick()
         {
             Point movePoint;
             switch (Snake.Facing)
@@ -146,13 +156,13 @@ namespace ConsoleApplication2
 
             if (movePoint.X < 0 || movePoint.Y < 0 || movePoint.X >= Width || movePoint.Y >= Height)
             {
-                throw new Exception("Dead");
+                return false;
             }
             foreach (var snakePoint in Snake.Points)
             {
                 if (snakePoint.Equals(movePoint))
                 {
-                    throw new Exception("Dead");
+                    return false;
                 }
             }
             Snake.Points.Insert(0, movePoint);
@@ -165,6 +175,7 @@ namespace ConsoleApplication2
             {
                 Snake.Points.RemoveAt(Snake.Points.Count - 1);
             }
+            return true;
         }
 
         Random r = new Random();
@@ -292,7 +303,7 @@ namespace ConsoleApplication2
 
         public override int GetHashCode()
         {
-            throw new NotImplementedException();
+            return this.X * 1000 + this.Y;
         }
 
         public Point(Point point)
