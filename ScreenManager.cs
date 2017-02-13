@@ -23,8 +23,16 @@ namespace SnakeAStar
             {
                 console[x * Program.Width + y] = color;
 
-                context.FillStyle = color;
-                context.FillRect(x * Program.BlockSize, y * Program.BlockSize, Program.BlockSize, Program.BlockSize);
+                if (color == "transparent")
+                {
+                    context.ClearRect(x * Program.BlockSize, y * Program.BlockSize, Program.BlockSize, Program.BlockSize);
+                }
+                else
+                {
+                    context.FillStyle = color;
+                    context.FillRect(x * Program.BlockSize, y * Program.BlockSize, Program.BlockSize, Program.BlockSize);
+                }
+
             }
         }
 

@@ -86,7 +86,7 @@ namespace SnakeAStar
                     }
                     else
                     {
-                        ScreenManager.SetPosition(context, x, y, "white");
+                        ScreenManager.SetPosition(context, x, y, "transparent");
                     }
 
                 }

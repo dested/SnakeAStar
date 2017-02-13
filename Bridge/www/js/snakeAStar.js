@@ -331,7 +331,7 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
                                 SnakeAStar.ScreenManager.setPosition(SnakeAStar.Program.context, x, y, "blue");
                             }
                         } else {
-                            SnakeAStar.ScreenManager.setPosition(SnakeAStar.Program.context, x, y, "white");
+                            SnakeAStar.ScreenManager.setPosition(SnakeAStar.Program.context, x, y, "transparent");
                         }
 
                     }
@@ -396,8 +396,13 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
                 if (!Bridge.referenceEquals(SnakeAStar.ScreenManager.console[((((x * SnakeAStar.Program.Width) | 0) + y) | 0)], color)) {
                     SnakeAStar.ScreenManager.console[((((x * SnakeAStar.Program.Width) | 0) + y) | 0)] = color;
 
-                    context.fillStyle = color;
-                    context.fillRect(((x * SnakeAStar.Program.BlockSize) | 0), ((y * SnakeAStar.Program.BlockSize) | 0), SnakeAStar.Program.BlockSize, SnakeAStar.Program.BlockSize);
+                    if (Bridge.referenceEquals(color, "transparent")) {
+                        context.clearRect(((x * SnakeAStar.Program.BlockSize) | 0), ((y * SnakeAStar.Program.BlockSize) | 0), SnakeAStar.Program.BlockSize, SnakeAStar.Program.BlockSize);
+                    } else {
+                        context.fillStyle = color;
+                        context.fillRect(((x * SnakeAStar.Program.BlockSize) | 0), ((y * SnakeAStar.Program.BlockSize) | 0), SnakeAStar.Program.BlockSize, SnakeAStar.Program.BlockSize);
+                    }
+
                 }
             }
         }
