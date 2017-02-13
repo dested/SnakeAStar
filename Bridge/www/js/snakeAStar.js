@@ -6,6 +6,164 @@
 Bridge.assembly("SnakeAStar", function ($asm, globals) {
     "use strict";
 
+    Bridge.define("SnakeAStar.ASTarSolver", {
+        statics: {
+            cachedPoints: null,
+            neighborItems: null,
+            config: {
+                init: function () {
+                    this.cachedPoints = new (System.Collections.Generic.List$1(SnakeAStar.Facing))();
+                    this.neighborItems = System.Array.init(3, null, SnakeAStar.Point);
+                }
+            },
+            getInput: function (board) {
+                var $t;
+                if (SnakeAStar.ASTarSolver.cachedPoints.getCount() > 0) {
+                    var point = SnakeAStar.ASTarSolver.cachedPoints.getItem(0);
+                    SnakeAStar.ASTarSolver.cachedPoints.removeAt(0);
+                    return point;
+                }
+
+                var start = board.snake.getHead();
+                var goal = board.dot;
+
+                var fakeBoard = new SnakeAStar.Board.ctor(board);
+                var startSnake = new SnakeAStar.Snake.ctor(board.snake);
+
+                var closedSet = new (System.Collections.Generic.List$1(System.Int32))();
+                var openSet = function (_o1) {
+                        _o1.add(start.hashCode);
+                        return _o1;
+                    }(new (System.Collections.Generic.List$1(System.Int32))());
+                var cameFrom = new (System.Collections.Generic.Dictionary$2(System.Int32,SnakeAStar.Point))();
+
+                var gScore = new (System.Collections.Generic.Dictionary$2(System.Int32,System.Double))();
+                gScore.set(start.hashCode, 0);
+
+                var fScore = new (System.Collections.Generic.List$1(Object))();
+                fScore.add({ item1: start, item2: startSnake, item3: SnakeAStar.ASTarSolver.distance(start, goal) });
+
+
+                while (openSet.getCount() > 0) {
+
+                    var lowest = System.Double.max;
+                    var itemIndex = -1;
+                    var item = null;
+                    for (var index = 0; index < fScore.getCount(); index = (index + 1) | 0) {
+                        var tuple = fScore.getItem(index);
+                        if (tuple.item3 <= lowest) {
+                            item = tuple;
+                            lowest = tuple.item3;
+                            itemIndex = index;
+                        }
+                    }
+
+                    var currentPoint = item.item1;
+                    var currentSnake = item.item2;
+                    //                Console.WriteLine(currentPoint + " " + keyValuePair.Key);
+                    //                Console.ReadLine();
+
+                    if (currentPoint.hashCodeNoFacing === goal.hashCodeNoFacing) {
+                        SnakeAStar.ASTarSolver.cachedPoints = SnakeAStar.ASTarSolver.reconstruct(cameFrom, currentPoint);
+                        return SnakeAStar.ASTarSolver.getInput(board);
+                    }
+                    var currentPointHashCode = currentPoint.hashCode;
+
+                    openSet.remove(currentPointHashCode);
+                    closedSet.add(currentPointHashCode);
+                    var newPoint = false;
+                    $t = Bridge.getEnumerator(SnakeAStar.ASTarSolver.neighbors(currentPoint));
+                    while ($t.moveNext()) {
+                        var neighbor = $t.getCurrent();
+                        var newSnake = new SnakeAStar.Snake.ctor(currentSnake);
+                        newSnake.setFacing(neighbor.facing);
+
+                        fakeBoard.snake = newSnake;
+
+                        if (fakeBoard.tick(false)) {
+                            var neighborHashCode = neighbor.hashCode;
+                            if (closedSet.contains(neighborHashCode)) {
+                                continue;
+                            }
+                            var tentative_gScore = gScore.get(currentPointHashCode) + SnakeAStar.ASTarSolver.distance(currentPoint, neighbor);
+
+                            if (!openSet.contains(neighborHashCode)) {
+                                openSet.add(neighborHashCode);
+                            } else if (tentative_gScore >= gScore.get(neighborHashCode)) {
+                                continue;
+                            }
+
+                            cameFrom.set(neighborHashCode, currentPoint);
+                            gScore.set(neighborHashCode, tentative_gScore);
+
+                            fScore.add({ item1: neighbor, item2: newSnake, item3: SnakeAStar.ASTarSolver.distance(neighbor, goal) });
+                            newPoint = true;
+                        }
+                    }
+                    if (!newPoint) {
+                        fScore.removeAt(itemIndex);
+                    }
+
+                }
+
+                return SnakeAStar.Facing.None;
+            },
+            reconstruct: function (cameFrom, current) {
+                var points = new (System.Collections.Generic.List$1(SnakeAStar.Facing))();
+                var now;
+                points.add(current.facing);
+                now = cameFrom.get(current.hashCode);
+
+                while (cameFrom.containsKey(now.hashCode)) {
+                    points.add(now.facing);
+                    now = cameFrom.get(now.hashCode);
+                }
+                points.reverse();
+                return points;
+            },
+            neighbors: function (current) {
+                switch (current.facing) {
+                    case SnakeAStar.Facing.Up: 
+                        SnakeAStar.ASTarSolver.neighborItems[0] = SnakeAStar.Point.getPoint(current.x, ((current.y - 1) | 0), SnakeAStar.Facing.Up);
+                        SnakeAStar.ASTarSolver.neighborItems[1] = SnakeAStar.Point.getPoint(((current.x - 1) | 0), current.y, SnakeAStar.Facing.Left);
+                        SnakeAStar.ASTarSolver.neighborItems[2] = SnakeAStar.Point.getPoint(((current.x + 1) | 0), current.y, SnakeAStar.Facing.Right);
+                        break;
+                    case SnakeAStar.Facing.Down: 
+                        SnakeAStar.ASTarSolver.neighborItems[0] = SnakeAStar.Point.getPoint(current.x, ((current.y + 1) | 0), SnakeAStar.Facing.Down);
+                        SnakeAStar.ASTarSolver.neighborItems[1] = SnakeAStar.Point.getPoint(((current.x - 1) | 0), current.y, SnakeAStar.Facing.Left);
+                        SnakeAStar.ASTarSolver.neighborItems[2] = SnakeAStar.Point.getPoint(((current.x + 1) | 0), current.y, SnakeAStar.Facing.Right);
+                        break;
+                    case SnakeAStar.Facing.Left: 
+                        SnakeAStar.ASTarSolver.neighborItems[0] = SnakeAStar.Point.getPoint(((current.x - 1) | 0), current.y, SnakeAStar.Facing.Left);
+                        SnakeAStar.ASTarSolver.neighborItems[1] = SnakeAStar.Point.getPoint(current.x, ((current.y - 1) | 0), SnakeAStar.Facing.Up);
+                        SnakeAStar.ASTarSolver.neighborItems[2] = SnakeAStar.Point.getPoint(current.x, ((current.y + 1) | 0), SnakeAStar.Facing.Down);
+                        break;
+                    case SnakeAStar.Facing.Right: 
+                        SnakeAStar.ASTarSolver.neighborItems[0] = SnakeAStar.Point.getPoint(((current.x + 1) | 0), current.y, SnakeAStar.Facing.Right);
+                        SnakeAStar.ASTarSolver.neighborItems[1] = SnakeAStar.Point.getPoint(current.x, ((current.y - 1) | 0), SnakeAStar.Facing.Up);
+                        SnakeAStar.ASTarSolver.neighborItems[2] = SnakeAStar.Point.getPoint(current.x, ((current.y + 1) | 0), SnakeAStar.Facing.Down);
+                        break;
+                    default: 
+                        throw new System.ArgumentOutOfRangeException();
+                }
+                return SnakeAStar.ASTarSolver.neighborItems;
+            },
+            distance: function (start, goal) {
+                var x1 = (((goal.x - start.x) | 0));
+                var y1 = (((goal.y - start.y) | 0));
+
+                var x2 = (((SnakeAStar.Program.Width - (((goal.x - start.x) | 0))) | 0));
+                var y2 = (((SnakeAStar.Program.Height - (((goal.y - start.y) | 0))) | 0));
+                var x = Math.min(((x1 * x1) | 0), ((x2 * x2) | 0));
+                var y = Math.min(((y1 * y1) | 0), ((y2 * y2) | 0));
+
+                var result = Math.sqrt(((x + y) | 0));
+
+                return result;
+            }
+        }
+    });
+
     Bridge.define("SnakeAStar.Board", {
         statics: {
             r: null,
@@ -156,166 +314,8 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
             Height: 80,
             BlockSize: 5,
             context: null,
-            cachedPoints: null,
-            neighborItems: null,
-            config: {
-                init: function () {
-                    this.cachedPoints = new (System.Collections.Generic.List$1(SnakeAStar.Facing))();
-                    this.neighborItems = System.Array.init(3, null, SnakeAStar.Point);
-                }
-            },
             getInput: function (board) {
-                var $t;
-
-                if (SnakeAStar.Program.cachedPoints.getCount() > 0) {
-                    var point = SnakeAStar.Program.cachedPoints.getItem(0);
-                    SnakeAStar.Program.cachedPoints.removeAt(0);
-                    return point;
-                }
-
-                var start = board.snake.getHead();
-                var goal = board.dot;
-
-                var fakeBoard = new SnakeAStar.Board.ctor(board);
-                var startSnake = new SnakeAStar.Snake.ctor(board.snake);
-
-                var closedSet = new (System.Collections.Generic.List$1(System.Int32))();
-                var openSet = function (_o1) {
-                        _o1.add(start.hashCode);
-                        return _o1;
-                    }(new (System.Collections.Generic.List$1(System.Int32))());
-                var cameFrom = new (System.Collections.Generic.Dictionary$2(System.Int32,SnakeAStar.Point))();
-
-                var gScore = new (System.Collections.Generic.Dictionary$2(System.Int32,System.Double))();
-                gScore.set(start.hashCode, 0);
-
-                var fScore = new (System.Collections.Generic.List$1(Object))();
-                fScore.add({ item1: start, item2: startSnake, item3: SnakeAStar.Program.distance(start, goal) });
-
-
-                while (openSet.getCount() > 0) {
-
-                    var lowest = System.Double.max;
-                    var itemIndex = -1;
-                    var item = null;
-                    for (var index = 0; index < fScore.getCount(); index = (index + 1) | 0) {
-                        var tuple = fScore.getItem(index);
-                        if (tuple.item3 <= lowest) {
-                            item = tuple;
-                            lowest = tuple.item3;
-                            itemIndex = index;
-                        }
-                    }
-
-                    var currentPoint = item.item1;
-                    var currentSnake = item.item2;
-                    //                Console.WriteLine(currentPoint + " " + keyValuePair.Key);
-                    //                Console.ReadLine();
-
-                    if (currentPoint.hashCodeNoFacing === goal.hashCodeNoFacing) {
-                        SnakeAStar.Program.cachedPoints = SnakeAStar.Program.reconstruct(cameFrom, currentPoint);
-                        return SnakeAStar.Program.getInput(board);
-                    }
-                    var currentPointHashCode = currentPoint.hashCode;
-
-                    openSet.remove(currentPointHashCode);
-                    closedSet.add(currentPointHashCode);
-                    var newPoint = false;
-                    $t = Bridge.getEnumerator(SnakeAStar.Program.neighbors(currentPoint));
-                    while ($t.moveNext()) {
-                        var neighbor = $t.getCurrent();
-                        var newSnake = new SnakeAStar.Snake.ctor(currentSnake);
-                        newSnake.setFacing(neighbor.facing);
-
-                        fakeBoard.snake = newSnake;
-
-                        if (fakeBoard.tick(false)) {
-                            var neighborHashCode = neighbor.hashCode;
-                            if (closedSet.contains(neighborHashCode)) {
-                                continue;
-                            }
-                            var tentative_gScore = gScore.get(currentPointHashCode) + SnakeAStar.Program.distance(currentPoint, neighbor);
-
-                            if (!openSet.contains(neighborHashCode)) {
-                                openSet.add(neighborHashCode);
-                            } else if (tentative_gScore >= gScore.get(neighborHashCode)) {
-                                continue;
-                            }
-
-                            cameFrom.set(neighborHashCode, currentPoint);
-                            gScore.set(neighborHashCode, tentative_gScore);
-
-                            fScore.add({ item1: neighbor, item2: newSnake, item3: SnakeAStar.Program.distance(neighbor, goal) });
-                            newPoint = true;
-                        }
-                    }
-                    if (!newPoint) {
-                        fScore.removeAt(itemIndex);
-                    }
-
-                }
-
-                return SnakeAStar.Facing.None;
-            },
-            reconstruct: function (cameFrom, current) {
-                var points = new (System.Collections.Generic.List$1(SnakeAStar.Facing))();
-                var now;
-                points.add(current.facing);
-                now = cameFrom.get(current.hashCode);
-
-                while (cameFrom.containsKey(now.hashCode)) {
-                    points.add(now.facing);
-                    now = cameFrom.get(now.hashCode);
-                }
-                points.reverse();
-                return points;
-
-                /*        total_path := [current]
-       while current in cameFrom.Keys:
-           current:= cameFrom[current]
-           total_path.append(current)
-       return total_path*/
-
-            },
-            neighbors: function (current) {
-                switch (current.facing) {
-                    case SnakeAStar.Facing.Up: 
-                        SnakeAStar.Program.neighborItems[0] = SnakeAStar.Point.getPoint(current.x, ((current.y - 1) | 0), SnakeAStar.Facing.Up);
-                        SnakeAStar.Program.neighborItems[1] = SnakeAStar.Point.getPoint(((current.x - 1) | 0), current.y, SnakeAStar.Facing.Left);
-                        SnakeAStar.Program.neighborItems[2] = SnakeAStar.Point.getPoint(((current.x + 1) | 0), current.y, SnakeAStar.Facing.Right);
-                        break;
-                    case SnakeAStar.Facing.Down: 
-                        SnakeAStar.Program.neighborItems[0] = SnakeAStar.Point.getPoint(current.x, ((current.y + 1) | 0), SnakeAStar.Facing.Down);
-                        SnakeAStar.Program.neighborItems[1] = SnakeAStar.Point.getPoint(((current.x - 1) | 0), current.y, SnakeAStar.Facing.Left);
-                        SnakeAStar.Program.neighborItems[2] = SnakeAStar.Point.getPoint(((current.x + 1) | 0), current.y, SnakeAStar.Facing.Right);
-                        break;
-                    case SnakeAStar.Facing.Left: 
-                        SnakeAStar.Program.neighborItems[0] = SnakeAStar.Point.getPoint(((current.x - 1) | 0), current.y, SnakeAStar.Facing.Left);
-                        SnakeAStar.Program.neighborItems[1] = SnakeAStar.Point.getPoint(current.x, ((current.y - 1) | 0), SnakeAStar.Facing.Up);
-                        SnakeAStar.Program.neighborItems[2] = SnakeAStar.Point.getPoint(current.x, ((current.y + 1) | 0), SnakeAStar.Facing.Down);
-                        break;
-                    case SnakeAStar.Facing.Right: 
-                        SnakeAStar.Program.neighborItems[0] = SnakeAStar.Point.getPoint(((current.x + 1) | 0), current.y, SnakeAStar.Facing.Right);
-                        SnakeAStar.Program.neighborItems[1] = SnakeAStar.Point.getPoint(current.x, ((current.y - 1) | 0), SnakeAStar.Facing.Up);
-                        SnakeAStar.Program.neighborItems[2] = SnakeAStar.Point.getPoint(current.x, ((current.y + 1) | 0), SnakeAStar.Facing.Down);
-                        break;
-                    default: 
-                        throw new System.ArgumentOutOfRangeException();
-                }
-                return SnakeAStar.Program.neighborItems;
-            },
-            distance: function (start, goal) {
-                var x1 = (((goal.x - start.x) | 0));
-                var y1 = (((goal.y - start.y) | 0));
-
-                var x2 = (((SnakeAStar.Program.Width - (((goal.x - start.x) | 0))) | 0));
-                var y2 = (((SnakeAStar.Program.Height - (((goal.y - start.y) | 0))) | 0));
-                var x = Math.min(((x1 * x1) | 0), ((x2 * x2) | 0));
-                var y = Math.min(((y1 * y1) | 0), ((y2 * y2) | 0));
-
-                var result = Math.sqrt(((x + y) | 0));
-
-                return result;
+                return SnakeAStar.ASTarSolver.getInput(board);
             },
             draw: function (board) {
                 var snakeHead = board.snake.getHead();
