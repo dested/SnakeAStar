@@ -149,15 +149,16 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
                 return SnakeAStar.ASTarSolver.neighborItems;
             },
             distance: function (start, goal) {
-                var x1 = (((goal.x - start.x) | 0));
-                var y1 = (((goal.y - start.y) | 0));
 
-                var x2 = (((SnakeAStar.Program.Width - (((goal.x - start.x) | 0))) | 0));
-                var y2 = (((SnakeAStar.Program.Height - (((goal.y - start.y) | 0))) | 0));
-                var x = Math.min(((x1 * x1) | 0), ((x2 * x2) | 0));
-                var y = Math.min(((y1 * y1) | 0), ((y2 * y2) | 0));
+                var x1 = ((((((goal.x - start.x) | 0)) + SnakeAStar.Program.Width) | 0)) % SnakeAStar.Program.Width;
+                var y1 = ((((((goal.y - start.y) | 0)) + SnakeAStar.Program.Height) | 0)) % SnakeAStar.Program.Height;
 
-                var result = Math.sqrt(((x + y) | 0));
+
+                var x2 = ((((((start.x - goal.x) | 0)) + SnakeAStar.Program.Width) | 0)) % SnakeAStar.Program.Width;
+                var y2 = ((((((start.y - goal.y) | 0)) + SnakeAStar.Program.Height) | 0)) % SnakeAStar.Program.Height;
+
+
+                var result = Math.sqrt(((Math.min(((x1 * x1) | 0), ((x2 * x2) | 0)) + Math.min(((y1 * y1) | 0), ((y2 * y2) | 0))) | 0));
 
                 return result;
             }
@@ -310,8 +311,8 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
 
     Bridge.define("SnakeAStar.Program", {
         statics: {
-            Width: 80,
-            Height: 80,
+            Width: 200,
+            Height: 200,
             BlockSize: 5,
             context: null,
             getInput: function (board) {
@@ -343,8 +344,8 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
 
 
             var canvas = Bridge.cast(document.createElement("canvas"), HTMLCanvasElement);
-            canvas.width = 400;
-            canvas.height = 400;
+            canvas.width = 1000;
+            canvas.height = 1000;
             SnakeAStar.Program.context = canvas.getContext("2d");
             SnakeAStar.Program.context.mozImageSmoothingEnabled = false;
             SnakeAStar.Program.context.msImageSmoothingEnabled = false;
@@ -370,9 +371,7 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
                     return;
                 }
                 SnakeAStar.Program.draw(board);
-                //                                                            Thread.Sleep(20);
                 ticks = (ticks + 1) | 0;
-
             }, 0);
         }
     });
@@ -389,7 +388,7 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
             console: null,
             config: {
                 init: function () {
-                    this.console = System.Array.init(6400, null, String);
+                    this.console = System.Array.init(40000, null, String);
                 }
             },
             setPosition: function (context, x, y, color) {

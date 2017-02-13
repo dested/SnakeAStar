@@ -8,8 +8,8 @@ namespace SnakeAStar
 {
     class Program
     {
-        public const int Width = 80;
-        public const int Height = 80;
+        public const int Width = 200;
+        public const int Height = 200;
         public const int BlockSize = 5;
 
         private static CanvasRenderingContext2D context;
@@ -49,9 +49,7 @@ namespace SnakeAStar
                     return;
                 }
                 Draw(board);
-                //                                                            Thread.Sleep(20);
                 ticks++;
-
             }, 0);
         }
 

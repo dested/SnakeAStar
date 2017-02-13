@@ -157,15 +157,16 @@ namespace SnakeAStar
 
         private static double distance(Point start, Point goal)
         {
-            var x1 = (goal.X - start.X);
-            var y1 = (goal.Y - start.Y);
 
-            var x2 = (Program.Width - (goal.X - start.X));
-            var y2 = (Program.Height - (goal.Y - start.Y));
-            var x = Math.Min(x1 * x1, x2 * x2);
-            var y = Math.Min(y1 * y1, y2 * y2);
+            var x1 = ((goal.X - start.X) + Program.Width) % Program.Width;
+            var y1 = ((goal.Y - start.Y) + Program.Height) % Program.Height;
 
-            var result = Math.Sqrt(x + y);
+
+            var x2 = ((start.X - goal.X) + Program.Width) % Program.Width;
+            var y2 = ((start.Y - goal.Y) + Program.Height) % Program.Height;
+
+            
+            var result = Math.Sqrt(Math.Min(x1 * x1, x2 * x2) + Math.Min(y1 * y1, y2 * y2));
 
             return result;
         }
