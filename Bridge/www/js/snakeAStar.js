@@ -382,19 +382,19 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
             ctor: function () {
                 for (var x = 0; x < SnakeAStar.Program.Width; x = (x + 1) | 0) {
                     for (var y = 0; y < SnakeAStar.Program.Height; y = (y + 1) | 0) {
-                        SnakeAStar.ScreenManager.console.set([x, y], "white");
+                        SnakeAStar.ScreenManager.console[((((x * SnakeAStar.Program.Width) | 0) + y) | 0)] = "white";
                     }
                 }
             },
             console: null,
             config: {
                 init: function () {
-                    this.console = System.Array.create(null, null, String, 80, 80);
+                    this.console = System.Array.init(6400, null, String);
                 }
             },
             setPosition: function (context, x, y, color) {
-                if (!Bridge.referenceEquals(SnakeAStar.ScreenManager.console.get([x, y]), color)) {
-                    SnakeAStar.ScreenManager.console.set([x, y], color);
+                if (!Bridge.referenceEquals(SnakeAStar.ScreenManager.console[((((x * SnakeAStar.Program.Width) | 0) + y) | 0)], color)) {
+                    SnakeAStar.ScreenManager.console[((((x * SnakeAStar.Program.Width) | 0) + y) | 0)] = color;
 
                     context.fillStyle = color;
                     context.fillRect(((x * SnakeAStar.Program.BlockSize) | 0), ((y * SnakeAStar.Program.BlockSize) | 0), SnakeAStar.Program.BlockSize, SnakeAStar.Program.BlockSize);

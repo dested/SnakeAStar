@@ -238,7 +238,7 @@ namespace SnakeAStar
                 {
                     if (board.Dot.X == x && board.Dot.Y == y)
                     {
-                        ScreenManager.SetPosition(context,x, y, "red");
+                        ScreenManager.SetPosition(context, x, y, "red");
 
                     }
                     else if (board.Snake.ContainsPoint(x, y))
@@ -263,7 +263,7 @@ namespace SnakeAStar
     }
     public class ScreenManager
     {
-        private static string[,] console = new string[Program.Width, Program.Height];
+        private static string[] console = new string[Program.Width * Program.Height];
 
         static ScreenManager()
         {
@@ -271,16 +271,16 @@ namespace SnakeAStar
             {
                 for (int y = 0; y < Program.Height; y++)
                 {
-                    console[x, y] = "white";
+                    console[x * Program.Width + y] = "white";
                 }
             }
         }
 
         public static void SetPosition(CanvasRenderingContext2D context, int x, int y, string color)
         {
-            if (console[x, y] != color)
+            if (console[x * Program.Width + y] != color)
             {
-                console[x, y] = color;
+                console[x * Program.Width + y] = color;
 
                 context.FillStyle = color;
                 context.FillRect(x * Program.BlockSize, y * Program.BlockSize, Program.BlockSize, Program.BlockSize);
