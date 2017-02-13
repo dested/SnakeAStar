@@ -11,7 +11,7 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
             r: null,
             config: {
                 init: function () {
-                    this.r = new System.Random.$ctor1(15659);
+                    this.r = new System.Random.ctor();
                 }
             },
             start: function (width, height, startX, startY, facing) {
@@ -154,10 +154,10 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
         statics: {
             Width: 80,
             Height: 80,
+            BlockSize: 5,
             context: null,
             cachedPoints: null,
             neighborItems: null,
-            blockSize: 5,
             config: {
                 init: function () {
                     this.cachedPoints = new (System.Collections.Generic.List$1(SnakeAStar.Facing))();
@@ -318,24 +318,20 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
                 return result;
             },
             draw: function (board) {
-                SnakeAStar.Program.context.clearRect(0, 0, 400, 400);
-
                 var snakeHead = board.snake.getHead();
                 for (var y = 0; y < board.height; y = (y + 1) | 0) {
                     for (var x = 0; x < board.width; x = (x + 1) | 0) {
                         if (board.dot.x === x && board.dot.y === y) {
-                            SnakeAStar.Program.context.fillStyle = "red";
-                            SnakeAStar.Program.context.fillRect(((x * SnakeAStar.Program.blockSize) | 0), ((y * SnakeAStar.Program.blockSize) | 0), SnakeAStar.Program.blockSize, SnakeAStar.Program.blockSize);
+                            SnakeAStar.ScreenManager.setPosition(SnakeAStar.Program.context, x, y, "red");
+
                         } else if (board.snake.containsPoint$1(x, y)) {
                             if (snakeHead.x === x && snakeHead.y === y) {
-                                SnakeAStar.Program.context.fillStyle = "light blue";
-                                SnakeAStar.Program.context.fillRect(((x * SnakeAStar.Program.blockSize) | 0), ((y * SnakeAStar.Program.blockSize) | 0), SnakeAStar.Program.blockSize, SnakeAStar.Program.blockSize);
+                                SnakeAStar.ScreenManager.setPosition(SnakeAStar.Program.context, x, y, "green");
                             } else {
-                                SnakeAStar.Program.context.fillStyle = "blue";
-                                SnakeAStar.Program.context.fillRect(((x * SnakeAStar.Program.blockSize) | 0), ((y * SnakeAStar.Program.blockSize) | 0), SnakeAStar.Program.blockSize, SnakeAStar.Program.blockSize);
+                                SnakeAStar.ScreenManager.setPosition(SnakeAStar.Program.context, x, y, "blue");
                             }
                         } else {
-                            //                        ConsoleManager.SetPosition(x, y, ' ');
+                            SnakeAStar.ScreenManager.setPosition(SnakeAStar.Program.context, x, y, "white");
                         }
 
                     }
@@ -350,7 +346,9 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
             canvas.width = 400;
             canvas.height = 400;
             SnakeAStar.Program.context = canvas.getContext("2d");
-
+            SnakeAStar.Program.context.mozImageSmoothingEnabled = false;
+            SnakeAStar.Program.context.msImageSmoothingEnabled = false;
+            SnakeAStar.Program.context.imageSmoothingEnabled = false;
             document.body.appendChild(canvas);
 
             var ticks = 0;
@@ -361,14 +359,12 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
             interval = window.setInterval(function () {
                 var facing = SnakeAStar.Program.getInput(board);
                 if (facing === SnakeAStar.Facing.None) {
-                    //                        Console.SetCursorPosition(0, board.Height + 2);
                     Bridge.Console.log(System.String.format("Dead! {0} Length in {1} ticks.", board.snake.points.getCount(), ticks));
                     window.clearInterval(interval);
                     return;
                 }
                 board.snake.setFacing(facing);
                 if (!board.tick()) {
-                    //                        Console.SetCursorPosition(0, board.Height + 2);
                     Bridge.Console.log(System.String.format("Dead! {0} Length in {1} ticks.", board.snake.points.getCount(), ticks));
                     window.clearInterval(interval);
                     return;
@@ -378,6 +374,32 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
                 ticks = (ticks + 1) | 0;
 
             }, 0);
+        }
+    });
+
+    Bridge.define("SnakeAStar.ScreenManager", {
+        statics: {
+            ctor: function () {
+                for (var x = 0; x < SnakeAStar.Program.Width; x = (x + 1) | 0) {
+                    for (var y = 0; y < SnakeAStar.Program.Height; y = (y + 1) | 0) {
+                        SnakeAStar.ScreenManager.console.set([x, y], "white");
+                    }
+                }
+            },
+            console: null,
+            config: {
+                init: function () {
+                    this.console = System.Array.create(null, null, String, 80, 80);
+                }
+            },
+            setPosition: function (context, x, y, color) {
+                if (!Bridge.referenceEquals(SnakeAStar.ScreenManager.console.get([x, y]), color)) {
+                    SnakeAStar.ScreenManager.console.set([x, y], color);
+
+                    context.fillStyle = color;
+                    context.fillRect(((x * SnakeAStar.Program.BlockSize) | 0), ((y * SnakeAStar.Program.BlockSize) | 0), SnakeAStar.Program.BlockSize, SnakeAStar.Program.BlockSize);
+                }
+            }
         }
     });
 
