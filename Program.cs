@@ -2,29 +2,30 @@
 using System;
 using System.Linq;
 using System.Threading;
+using Bridge;
 using Bridge.Html5;
 
 namespace SnakeAStar
 {
     class Program
     {
-        public const int Width = 200;
-        public const int Height = 200;
-        public const int BlockSize = 5;
+        public const int Width = 100;
+        public const int Height = 100;
+        public const int BlockSize = 2;
 
         private static CanvasRenderingContext2D context;
         static void Main(string[] args)
         {
             //                Console.Clear();
-
+         
 
             var canvas = (HTMLCanvasElement)Document.CreateElement("canvas");
             canvas.Width = Width * BlockSize;
             canvas.Height = Height * BlockSize;
             context = canvas.GetContext(CanvasTypes.CanvasContext2DType.CanvasRenderingContext2D);
-            ((dynamic)context).mozImageSmoothingEnabled = false; /// future
-            ((dynamic)context).msImageSmoothingEnabled = false; /// future
-            ((dynamic)context).imageSmoothingEnabled = false; /// future
+            ((dynamic)context).mozImageSmoothingEnabled = false;  
+            ((dynamic)context).msImageSmoothingEnabled = false;  
+            ((dynamic)context).imageSmoothingEnabled = false;  
             Document.Body.AppendChild(canvas);
 
             int ticks = 0;
@@ -37,18 +38,20 @@ namespace SnakeAStar
                 var facing = GetInput(board);
                 if (facing == Facing.None)
                 {
-                    Console.WriteLine($"Dead! {board.Snake.Points.Count} Length in {ticks} ticks.");
+                    Draw(board);
+                    Window.Alert($"Dead, no moves! {board.Snake.Points.Count} Length in {ticks} ticks.");
                     Window.ClearInterval(interval);
                     return;
                 }
                 board.Snake.SetFacing(facing);
                 if (!board.Tick())
                 {
-                    Console.WriteLine($"Dead! {board.Snake.Points.Count} Length in {ticks} ticks.");
+                    Draw(board);
+                    Window.Alert($"Dead collided! {board.Snake.Points.Count} Length in {ticks} ticks.");
                     Window.ClearInterval(interval);
                     return;
                 }
-                Draw(board);
+                    Draw(board);
                 ticks++;
             }, 0);
         }
@@ -90,5 +93,16 @@ namespace SnakeAStar
                 }
             }
         }
+        [Init(InitPosition.Top)]
+        private static void DisableConsole()
+        {
+            /*@
+            Bridge.Console.log = function(message) { console.log(message); };
+            Bridge.Console.error = function(message) { console.error(message); };
+            Bridge.Console.debug = function(message) { console.debug(message); };
+            */
+        }
     }
+
+  
 }
