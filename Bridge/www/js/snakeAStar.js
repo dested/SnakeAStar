@@ -15,11 +15,11 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
     Bridge.define("SnakeAStar.ASTarSolver", {
         statics: {
             cachedPoints: null,
-            neighborItems: null,
+            neighborCache: null,
             config: {
                 init: function () {
                     this.cachedPoints = new (System.Collections.Generic.List$1(SnakeAStar.Facing))();
-                    this.neighborItems = System.Array.init(3, 0, SnakeAStar.Facing);
+                    this.neighborCache = System.Array.init(3, 0, SnakeAStar.Facing);
                 }
             },
             getInput: function (board) {
@@ -34,7 +34,6 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
                 var goal = board.dot;
 
                 var fakeBoard = new SnakeAStar.Board.ctor(board);
-                var startSnake = new SnakeAStar.Snake.ctor(board.snake);
 
                 var closedSet = new (System.Collections.Generic.List$1(System.Int32))();
                 var openSet = function (_o1) {
@@ -47,41 +46,38 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
                 gScore.set(start.hashCode, 0);
 
                 var fScore = new (System.Collections.Generic.List$1(Object))();
-                fScore.add({ item1: startSnake, item2: SnakeAStar.ASTarSolver.distance(start, goal) });
+                fScore.add({ item1: new SnakeAStar.Snake.ctor(board.snake), item2: SnakeAStar.ASTarSolver.distance(start, goal) });
 
                 while (openSet.getCount() > 0) {
 
                     var lowest = System.Double.max;
                     var itemIndex = -1;
-                    var item = null;
+                    var currentSnake = null;
                     for (var index = 0; index < fScore.getCount(); index = (index + 1) | 0) {
                         var tuple = fScore.getItem(index);
                         if (tuple.item2 <= lowest) {
-                            item = tuple;
+                            currentSnake = tuple.item1;
                             lowest = tuple.item2;
                             itemIndex = index;
                         }
                     }
 
-                    var currentPoint = item.item1.getHead();
-                    var currentSnake = item.item1;
-                    //                Console.WriteLine(currentPoint + " " + keyValuePair.Key);
-                    //                Console.ReadLine();
-
-                    if (currentPoint.hashCodeNoFacing === goal.hashCodeNoFacing) {
-                        SnakeAStar.ASTarSolver.cachedPoints = SnakeAStar.ASTarSolver.reconstruct(cameFrom, currentPoint);
+                    var currentHead = currentSnake.getHead();
+                    if (currentHead.hashCodeNoFacing === goal.hashCodeNoFacing) {
+                        SnakeAStar.ASTarSolver.cachedPoints = SnakeAStar.ASTarSolver.reconstruct(cameFrom, currentHead);
 
                         var endTicks = window.performance.now();
-                        Bridge.Console.log(System.String.format("{0} ticks with {1} moves", endTicks - startTicks, SnakeAStar.ASTarSolver.cachedPoints.getCount()));
+                        Bridge.Console.log(System.String.format("{0} ticks with {1} moves {2} length", endTicks - startTicks, SnakeAStar.ASTarSolver.cachedPoints.getCount(), currentSnake.points.getCount()));
 
+                        //                    return cachedPoints.First();
                         return SnakeAStar.ASTarSolver.getInput(board);
                     }
-                    var currentPointHashCode = currentPoint.hashCode;
+                    var currentPointHashCode = currentHead.hashCode;
 
                     openSet.remove(currentPointHashCode);
                     closedSet.add(currentPointHashCode);
                     var newPoint = false;
-                    $t = Bridge.getEnumerator(SnakeAStar.ASTarSolver.neighbors(currentPoint));
+                    $t = Bridge.getEnumerator(SnakeAStar.ASTarSolver.neighbors(currentHead));
                     while ($t.moveNext()) {
                         var neighbor = $t.getCurrent();
                         var newSnake = new SnakeAStar.Snake.ctor(currentSnake);
@@ -90,11 +86,13 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
                         fakeBoard.snake = newSnake;
 
                         if (fakeBoard.tick(false)) {
-                            var neighborHashCode = newSnake.getHead().hashCode;
+                            var newHead = newSnake.getHead();
+
+                            var neighborHashCode = newHead.hashCode;
                             if (closedSet.contains(neighborHashCode)) {
                                 continue;
                             }
-                            var tentative_gScore = gScore.get(currentPointHashCode) + SnakeAStar.ASTarSolver.distance(currentPoint, newSnake.getHead());
+                            var tentative_gScore = gScore.get(currentPointHashCode) + SnakeAStar.ASTarSolver.distance(currentHead, newHead);
 
                             if (!openSet.contains(neighborHashCode)) {
                                 openSet.add(neighborHashCode);
@@ -102,10 +100,10 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
                                 continue;
                             }
 
-                            cameFrom.set(neighborHashCode, currentPoint);
+                            cameFrom.set(neighborHashCode, currentHead);
                             gScore.set(neighborHashCode, tentative_gScore);
 
-                            fScore.add({ item1: newSnake, item2: SnakeAStar.ASTarSolver.distance(newSnake.getHead(), goal) });
+                            fScore.add({ item1: newSnake, item2: SnakeAStar.ASTarSolver.distance(newHead, goal) });
                             newPoint = true;
                         }
                     }
@@ -132,29 +130,29 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
             neighbors: function (current) {
                 switch (current.facing) {
                     case SnakeAStar.Facing.Up: 
-                        SnakeAStar.ASTarSolver.neighborItems[0] = SnakeAStar.Facing.Up;
-                        SnakeAStar.ASTarSolver.neighborItems[1] = SnakeAStar.Facing.Left;
-                        SnakeAStar.ASTarSolver.neighborItems[2] = SnakeAStar.Facing.Right;
+                        SnakeAStar.ASTarSolver.neighborCache[0] = SnakeAStar.Facing.Up;
+                        SnakeAStar.ASTarSolver.neighborCache[1] = SnakeAStar.Facing.Left;
+                        SnakeAStar.ASTarSolver.neighborCache[2] = SnakeAStar.Facing.Right;
                         break;
                     case SnakeAStar.Facing.Down: 
-                        SnakeAStar.ASTarSolver.neighborItems[0] = SnakeAStar.Facing.Down;
-                        SnakeAStar.ASTarSolver.neighborItems[1] = SnakeAStar.Facing.Left;
-                        SnakeAStar.ASTarSolver.neighborItems[2] = SnakeAStar.Facing.Right;
+                        SnakeAStar.ASTarSolver.neighborCache[0] = SnakeAStar.Facing.Down;
+                        SnakeAStar.ASTarSolver.neighborCache[1] = SnakeAStar.Facing.Left;
+                        SnakeAStar.ASTarSolver.neighborCache[2] = SnakeAStar.Facing.Right;
                         break;
                     case SnakeAStar.Facing.Left: 
-                        SnakeAStar.ASTarSolver.neighborItems[0] = SnakeAStar.Facing.Left;
-                        SnakeAStar.ASTarSolver.neighborItems[1] = SnakeAStar.Facing.Up;
-                        SnakeAStar.ASTarSolver.neighborItems[2] = SnakeAStar.Facing.Down;
+                        SnakeAStar.ASTarSolver.neighborCache[0] = SnakeAStar.Facing.Left;
+                        SnakeAStar.ASTarSolver.neighborCache[1] = SnakeAStar.Facing.Up;
+                        SnakeAStar.ASTarSolver.neighborCache[2] = SnakeAStar.Facing.Down;
                         break;
                     case SnakeAStar.Facing.Right: 
-                        SnakeAStar.ASTarSolver.neighborItems[0] = SnakeAStar.Facing.Right;
-                        SnakeAStar.ASTarSolver.neighborItems[1] = SnakeAStar.Facing.Up;
-                        SnakeAStar.ASTarSolver.neighborItems[2] = SnakeAStar.Facing.Down;
+                        SnakeAStar.ASTarSolver.neighborCache[0] = SnakeAStar.Facing.Right;
+                        SnakeAStar.ASTarSolver.neighborCache[1] = SnakeAStar.Facing.Up;
+                        SnakeAStar.ASTarSolver.neighborCache[2] = SnakeAStar.Facing.Down;
                         break;
                     default: 
                         throw new System.ArgumentOutOfRangeException();
                 }
-                return SnakeAStar.ASTarSolver.neighborItems;
+                return SnakeAStar.ASTarSolver.neighborCache;
             },
             distance: function (start, goal) {
 
@@ -165,13 +163,12 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
 
 
                 var result = Math.sqrt(((Math.min(((x1 * x1) | 0), ((x2 * x2) | 0)) + Math.min(((y1 * y1) | 0), ((y2 * y2) | 0))) | 0));
-
                 /* 
-            var x1 = goal.X - start.X;
-            var y1 = goal.Y - start.Y;
+                        var x1 = goal.X - start.X;
+                        var y1 = goal.Y - start.Y;
 
-            var result = Math.Sqrt(x1 * x1 + y1 * y1);
-*/
+                        var result = Math.Sqrt(x1 * x1 + y1 * y1);
+            */
 
                 return result;
             }
@@ -183,7 +180,7 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
             r: null,
             config: {
                 init: function () {
-                    this.r = new System.Random.ctor();
+                    this.r = new System.Random.$ctor1(156549);
                 }
             },
             start: function (width, height, startX, startY, facing) {
@@ -231,7 +228,7 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
                     throw new System.ArgumentOutOfRangeException();
             }
 
-            if (this.snake.containsPoint(movePoint.hashCodeNoFacing)) {
+            if (this.snake.containsPointWithOffset(movePoint.hashCodeNoFacing, 1)) {
                 return false;
             }
 
@@ -248,7 +245,7 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
         newDot: function () {
             while (true) {
                 this.dot = SnakeAStar.Point.getPoint(SnakeAStar.Board.r.next$2(0, this.width), SnakeAStar.Board.r.next$2(0, this.height), SnakeAStar.Facing.None);
-                if (!this.snake.containsPoint(this.dot.hashCodeNoFacing)) {
+                if (!this.snake.containsPointWithOffset(this.dot.hashCodeNoFacing, 0)) {
                     break;
                 }
             }
@@ -326,23 +323,25 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
         statics: {
             Width: 100,
             Height: 100,
-            BlockSize: 2,
+            BlockSize: 1,
             context: null,
             getInput: function (board) {
                 return SnakeAStar.ASTarSolver.getInput(board);
             },
             draw: function (board) {
                 var snakeHead = board.snake.getHead();
+                //            var tails = board.Snake.Tails;
                 for (var y = 0; y < board.height; y = (y + 1) | 0) {
                     for (var x = 0; x < board.width; x = (x + 1) | 0) {
                         if (board.dot.x === x && board.dot.y === y) {
                             SnakeAStar.ScreenManager.setPosition(SnakeAStar.Program.context, x, y, "red");
 
-                        } else if (board.snake.containsPoint$1(x, y)) {
+                        } else if (board.snake.containsPoint(x, y)) {
                             if (snakeHead.x === x && snakeHead.y === y) {
                                 SnakeAStar.ScreenManager.setPosition(SnakeAStar.Program.context, x, y, "green");
                             } else {
                                 SnakeAStar.ScreenManager.setPosition(SnakeAStar.Program.context, x, y, "blue");
+
                             }
                         } else {
                             SnakeAStar.ScreenManager.setPosition(SnakeAStar.Program.context, x, y, "transparent");
@@ -357,8 +356,8 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
 
 
             var canvas = Bridge.cast(document.createElement("canvas"), HTMLCanvasElement);
-            canvas.width = 200;
-            canvas.height = 200;
+            canvas.width = 100;
+            canvas.height = 100;
             SnakeAStar.Program.context = canvas.getContext("2d");
             SnakeAStar.Program.context.mozImageSmoothingEnabled = false;
             SnakeAStar.Program.context.msImageSmoothingEnabled = false;
@@ -374,8 +373,12 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
                 var facing = SnakeAStar.Program.getInput(board);
                 if (facing === SnakeAStar.Facing.None) {
                     SnakeAStar.Program.draw(board);
-                    window.alert(System.String.format("Dead, no moves! {0} Length in {1} ticks.", board.snake.points.getCount(), ticks));
-                    window.clearInterval(interval);
+
+                    /*   
+                     Window.Alert($"Dead, no moves! {board.Snake.Points.Count} Length in {ticks} ticks.");
+                     Window.ClearInterval(interval);
+                      return;*/
+                    board = SnakeAStar.Board.start(SnakeAStar.Program.Width, SnakeAStar.Program.Height, 3, 3, SnakeAStar.Facing.Up);
                     return;
                 }
                 board.snake.setFacing(facing);
@@ -447,12 +450,20 @@ Bridge.assembly("SnakeAStar", function ($asm, globals) {
         setHead: function (value) {
             this.points.setItem(0, value);
         },
-        containsPoint$1: function (x, y) {
-            var pointHashCodeNoFacing = (((x * 100000) | 0) + y) | 0;
-            return this.containsPoint(pointHashCodeNoFacing);
+        getTails: function () {
+            var points = new (System.Collections.Generic.List$1(System.Int32))();
+            for (var index = (this.points.getCount() - 3) | 0; index >= 0 && index < this.points.getCount(); index = (index + 1) | 0) {
+                var point = this.points.getItem(index);
+                points.add(point.hashCodeNoFacing);
+            }
+            return points.toArray();
         },
-        containsPoint: function (hashCodeNoFacing) {
-            var pointCount = this.points.getCount();
+        containsPoint: function (x, y) {
+            var pointHashCodeNoFacing = (((x * 100000) | 0) + y) | 0;
+            return this.containsPointWithOffset(pointHashCodeNoFacing, 0);
+        },
+        containsPointWithOffset: function (hashCodeNoFacing, offset) {
+            var pointCount = (this.points.getCount() - offset) | 0;
             for (var i = 0; i < pointCount; i = (i + 1) | 0) {
                 if (this.points.getItem(i).hashCodeNoFacing === hashCodeNoFacing) {
                     return true;

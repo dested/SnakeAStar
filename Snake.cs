@@ -22,16 +22,30 @@ namespace SnakeAStar
             set { Points[0] = value; }
         }
 
+        public int[] Tails
+        {
+            get
+            {
+                List<int> points=new List<int>();
+                for (var index = Points.Count-3;index>=0 && index < Points.Count; index++)
+                {
+                    var point = Points[index];
+                    points.Add(point.hashCodeNoFacing);
+                }
+                return points.ToArray();
+            }
+        }
+
         public List<Point> Points;
 
         internal bool ContainsPoint(int x, int y)
         {
             var pointHashCodeNoFacing = x * 100000 + y;
-            return ContainsPoint(pointHashCodeNoFacing);
+            return ContainsPointWithOffset(pointHashCodeNoFacing,0);
         }
-        internal bool ContainsPoint(int hashCodeNoFacing)
+        internal bool ContainsPointWithOffset(int hashCodeNoFacing,int offset)
         {
-            var pointCount = Points.Count;
+            var pointCount = Points.Count - offset;
             for (int i = 0; i < pointCount; i++)
             {
                 if (Points[i].hashCodeNoFacing == hashCodeNoFacing)

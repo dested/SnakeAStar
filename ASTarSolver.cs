@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using Bridge.Html5;
 
 namespace SnakeAStar
@@ -22,7 +24,6 @@ namespace SnakeAStar
             var goal = board.Dot;
 
             var fakeBoard = new Board(board);
-            var startSnake = new Snake(board.Snake);
 
             List<int> closedSet = new List<int>();
             List<int> openSet = new List<int> { start.hashCode };
@@ -32,45 +33,42 @@ namespace SnakeAStar
             gScore[start.hashCode] = 0;
 
             var fScore = new List<Tuple<Snake, double>>();
-            fScore.Add(Tuple.Create(startSnake, distance(start, goal)));
+            fScore.Add(Tuple.Create(new Snake(board.Snake), distance(start, goal)));
 
             while (openSet.Count > 0)
             {
 
                 var lowest = double.MaxValue;
                 int itemIndex = -1;
-                Tuple<Snake, double> item = null;
+                Snake currentSnake = null;
                 for (var index = 0; index < fScore.Count; index++)
                 {
                     var tuple = fScore[index];
                     if (tuple.Item2 <= lowest)
                     {
-                        item = tuple;
+                        currentSnake = tuple.Item1;
                         lowest = tuple.Item2;
                         itemIndex = index;
                     }
                 }
 
-                var currentPoint = item.Item1.Head;
-                var currentSnake = item.Item1;
-                //                Console.WriteLine(currentPoint + " " + keyValuePair.Key);
-                //                Console.ReadLine();
-
-                if (currentPoint.hashCodeNoFacing == goal.hashCodeNoFacing)
+                var currentHead = currentSnake.Head;
+                if (currentHead.hashCodeNoFacing == goal.hashCodeNoFacing)
                 {
-                    cachedPoints = reconstruct(cameFrom, currentPoint);
+                    cachedPoints = reconstruct(cameFrom, currentHead);
 
-                    var endTicks= Window.Performance.Now();
-                    Console.WriteLine($"{endTicks - startTicks} ticks with {cachedPoints.Count} moves");
+                    var endTicks = Window.Performance.Now();
+                    Console.WriteLine($"{endTicks - startTicks} ticks with {cachedPoints.Count} moves {currentSnake.Points.Count} length");
 
+//                    return cachedPoints.First();
                     return GetInput(board);
                 }
-                var currentPointHashCode = currentPoint.hashCode;
+                var currentPointHashCode = currentHead.hashCode;
 
                 openSet.Remove(currentPointHashCode);
                 closedSet.Add(currentPointHashCode);
                 var newPoint = false;
-                foreach (var neighbor in neighbors(currentPoint))
+                foreach (var neighbor in Neighbors(currentHead))
                 {
                     var newSnake = new Snake(currentSnake);
                     newSnake.SetFacing(neighbor);
@@ -79,12 +77,14 @@ namespace SnakeAStar
 
                     if (fakeBoard.Tick(false))
                     {
-                        var neighborHashCode = newSnake.Head.hashCode;
+                        var newHead = newSnake.Head;
+
+                        var neighborHashCode = newHead.hashCode;
                         if (closedSet.Contains(neighborHashCode))
                         {
                             continue;
                         }
-                        var tentative_gScore = gScore[currentPointHashCode] + distance(currentPoint, newSnake.Head);
+                        var tentative_gScore = gScore[currentPointHashCode] + distance(currentHead, newHead);
 
                         if (!openSet.Contains(neighborHashCode))
                         {
@@ -95,10 +95,10 @@ namespace SnakeAStar
                             continue;
                         }
 
-                        cameFrom[neighborHashCode] = currentPoint;
+                        cameFrom[neighborHashCode] = currentHead;
                         gScore[neighborHashCode] = tentative_gScore;
 
-                        fScore.Add(Tuple.Create(newSnake, distance(newSnake.Head, goal)));
+                        fScore.Add(Tuple.Create(newSnake, distance(newHead, goal)));
                         newPoint = true;
                     }
                 }
@@ -115,7 +115,7 @@ namespace SnakeAStar
         private static List<Facing> reconstruct(Dictionary<int, Point> cameFrom, Point current)
         {
             List<Facing> points = new List<Facing>();
-            points.Add(current.Facing); 
+            points.Add(current.Facing);
 
             while (cameFrom.ContainsKey(current.hashCode))
             {
@@ -127,35 +127,35 @@ namespace SnakeAStar
             return points;
         }
 
-        private static Facing[] neighborItems = new Facing[3];
-        private static Facing[] neighbors(Point current)
+        private static readonly Facing[] neighborCache = new Facing[3];
+        private static Facing[] Neighbors(Point current)
         {
             switch (current.Facing)
             {
                 case Facing.Up:
-                    neighborItems[0] = Facing.Up;
-                    neighborItems[1] = Facing.Left;
-                    neighborItems[2] = Facing.Right;
+                    neighborCache[0] = Facing.Up;
+                    neighborCache[1] = Facing.Left;
+                    neighborCache[2] = Facing.Right;
                     break;
                 case Facing.Down:
-                    neighborItems[0] = Facing.Down;
-                    neighborItems[1] = Facing.Left;
-                    neighborItems[2] = Facing.Right;
+                    neighborCache[0] = Facing.Down;
+                    neighborCache[1] = Facing.Left;
+                    neighborCache[2] = Facing.Right;
                     break;
                 case Facing.Left:
-                    neighborItems[0] = Facing.Left;
-                    neighborItems[1] = Facing.Up;
-                    neighborItems[2] = Facing.Down;
+                    neighborCache[0] = Facing.Left;
+                    neighborCache[1] = Facing.Up;
+                    neighborCache[2] = Facing.Down;
                     break;
                 case Facing.Right:
-                    neighborItems[0] = Facing.Right;
-                    neighborItems[1] = Facing.Up;
-                    neighborItems[2] = Facing.Down;
+                    neighborCache[0] = Facing.Right;
+                    neighborCache[1] = Facing.Up;
+                    neighborCache[2] = Facing.Down;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-            return neighborItems;
+            return neighborCache;
         }
 
         private static double distance(Point start, Point goal)
@@ -168,13 +168,12 @@ namespace SnakeAStar
 
 
             var result = Math.Sqrt(Math.Min(x1 * x1, x2 * x2) + Math.Min(y1 * y1, y2 * y2));
+            /*
+                        var x1 = goal.X - start.X;
+                        var y1 = goal.Y - start.Y;
 
-/*
-            var x1 = goal.X - start.X;
-            var y1 = goal.Y - start.Y;
-
-            var result = Math.Sqrt(x1 * x1 + y1 * y1);
-*/
+                        var result = Math.Sqrt(x1 * x1 + y1 * y1);
+            */
 
             return result;
         }

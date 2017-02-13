@@ -55,7 +55,7 @@ namespace SnakeAStar
                     throw new ArgumentOutOfRangeException();
             }
 
-            if (Snake.ContainsPoint(movePoint.hashCodeNoFacing))
+            if (Snake.ContainsPointWithOffset(movePoint.hashCodeNoFacing, 1))
             {
                 return false;
             }
@@ -82,7 +82,7 @@ namespace SnakeAStar
             while (true)
             {
                 Dot = Point.GetPoint(r.Next(0, Width), r.Next(0, Height), Facing.None);
-                if (!Snake.ContainsPoint(Dot.hashCodeNoFacing))
+                if (!Snake.ContainsPointWithOffset(Dot.hashCodeNoFacing, 0))
                 {
                     break;
                 }
